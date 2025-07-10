@@ -456,24 +456,38 @@ const Dashboard: React.FC = () => {
         userProfile={userProfile}
         onAddApplication={handleAddApplication}
         onFindMoreJobs={handleJobSearch}
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                      <FileText className="h-6 w-6 text-white" />
       />
       
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Resume Builder</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Create professional resumes & cover letters</p>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {error && (
           <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 sm:p-4 rounded-lg mb-4 sm:mb-6 border border-red-200 dark:border-red-800">
             <div className="flex items-start">
+              <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm font-medium">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* AI Resume Builder Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+          <div className="flex items-start space-x-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <FileText className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Resume Builder</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Create professional resumes & cover letters</p>
                   <button 
                     onClick={() => navigate('/resume-builder')}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
                   >
                     Build Resume
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-                <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
-                  Create professional resumes and cover letters with AI assistance. Get ATS-optimized content tailored to your target jobs.
-                <p className="text-sm font-medium">{error}</p>
+                  </button>
+              <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                Create professional resumes and cover letters with AI assistance. Get ATS-optimized content tailored to your target jobs.
+              </p>
                 <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                   <span className="flex items-center gap-1">
                     <Wand2 size={14} />
@@ -491,7 +505,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         <div className="space-y-6 sm:space-y-8">
           <StatsCards stats={stats} />
