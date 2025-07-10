@@ -470,43 +470,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* AI Resume Builder Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-          <div className="flex items-start space-x-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <FileText className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Resume Builder</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Create professional resumes & cover letters</p>
-               <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
-                 Create professional resumes and cover letters with AI assistance. Get ATS-optimized content tailored to your target jobs.
-               </p>
-               <button 
-                 onClick={() => navigate('/resume-builder')}
-                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors mb-4"
-               >
-                 Build Resume
-               </button>
-               <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                 <span className="flex items-center gap-1">
-                   <Wand2 size={14} />
-                   AI-powered content
-                 </span>
-                 <span className="flex items-center gap-1">
-                   <FileText size={14} />
-                   Multiple templates
-                 </span>
-                 <span className="flex items-center gap-1">
-                   <Download size={14} />
-                   PDF download
-                 </span>
-               </div>
-            </div>
-          </div>
-        </div>
-
         <div className="space-y-6 sm:space-y-8">
           <StatsCards stats={stats} />
           
