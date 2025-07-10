@@ -209,6 +209,9 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
 
       // Get resume data from resume builder state
       const resumeData = resumeBuilder.resumeData;
+        dispatch(setError('Resume personal information is required'));
+        return;
+      }
 
       const generated = await generateResumeAndCoverLetter(
         jobDescription,
