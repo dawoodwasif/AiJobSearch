@@ -65,7 +65,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
   const [isDragOver, setIsDragOver] = React.useState(false);
   const [generatedContent, setGeneratedContent] = React.useState<any>(null);
   const [showPDFViewer, setShowPDFViewer] = React.useState(false);
-  const [openaiApiKey, setOpenaiApiKey] = React.useState('');
+  const [openaiApiKey, setOpenaiApiKey] = React.useState(import.meta.env.VITE_OPENAI_API_KEY || '');
   const [extractedText, setExtractedText] = React.useState('');
   const { user } = useAuth();
   const config = ResumeExtractionService.getConfiguration();
@@ -176,7 +176,9 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
       return;
     }
 
-    if (!openaiApiKey.trim()) {
+    // Check if we have an API key from env or user input
+    const apiKey = openaiApiKey.trim() || import.meta.env.VITE_OPENAI_API_KEY;
+    if (!apiKey) {
       dispatch(setError('Please provide all required information including OpenAI API key'));
       return;
     }
@@ -207,7 +209,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
       const generated = await generateResumeAndCoverLetter(
         extractedText,
         jobDescription,
-        openaiApiKey
+        apiKey
       );
 
       setGeneratedContent(generated);
@@ -572,16 +574,22 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
           {/* OpenAI API Key Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              OpenAI API Key *
+              OpenAI API Key {import.meta.env.VITE_OPENAI_API_KEY ? '(Using environment key)' : '*'}
             </label>
             <input
               type="password"
               value={openaiApiKey}
               onChange={(e) => setOpenaiApiKey(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              placeholder="Enter your OpenAI API key"
+              placeholder={import.meta.env.VITE_OPENAI_API_KEY ? "Using environment key (optional override)" : "Enter your OpenAI API key"}
+              disabled={!!import.meta.env.VITE_OPENAI_API_KEY}
               required
             />
+            {import.meta.env.VITE_OPENAI_API_KEY && (
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                ✅ OpenAI API key is configured in environment variables
+              </p>
+            )}
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Your API key is used to generate tailored content and is not stored.
             </p>
@@ -666,7 +674,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
             <button
               type="button"
               onClick={handleGenerateAI}
-              disabled={loading || (!selectedFileMeta && !cloudFileUrl) || !(jobDescription || persistedJobDescription || '').trim() || !openaiApiKey.trim()}
+              disabled={loading || (!selectedFileMeta && !cloudFileUrl) || !(jobDescription || persistedJobDescription || '').trim()}
               className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-all disabled:cursor-not-allowed"
             >
               {loading ? (
