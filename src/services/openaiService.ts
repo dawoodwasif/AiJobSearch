@@ -235,3 +235,7 @@ export const openaiService = new OpenAIService();
 
 // Export the class for custom instances
 export { OpenAIService };
+// Export the generateResumeAndCoverLetter function for direct use
+export const generateResumeAndCoverLetter = async (request: GenerationRequest): Promise<GenerationResponse> => {
+  return openaiService.generateResumeAndCoverLetter(request);
+};
