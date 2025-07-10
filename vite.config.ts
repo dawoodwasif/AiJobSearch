@@ -94,6 +94,17 @@ export default defineConfig({
           });
         },
       },
+      // Proxy resume text extraction requests
+      '/api/extract-resume-text': {
+        target: 'https://resumebuilder-arfb.onrender.com',
+        changeOrigin: true,
+        rewrite: (path) => '/extract-resume-text',
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('Resume text extraction proxy error', err);
+          });
+        },
+      },
       // Proxy AI generation requests to Supabase Edge Functions in development
       '/api/ai/generate-resume-content': {
         target: `${process.env.VITE_SUPABASE_URL || 'http://localhost:54321'}/functions/v1`,
