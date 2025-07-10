@@ -204,19 +204,19 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
     dispatch(setError(''));
     setExtractionProgress('');
 
-    try {
-      const generated = await generateResumeAndCoverLetter(
       // Get job description from AI enhancement modal state
       const jobDescription = aiEnhancementModal.jobDescription;
-      
+
       // Get resume data from resume builder state
       const resumeData = resumeBuilder.resumeData;
-      
+
+    try {
       // Validate that we have the required data
       if (!jobDescription || !jobDescription.trim()) {
         dispatch(setError('Job description is required'));
         return;
       }
+      const generated = await generateResumeAndCoverLetter(
       
       if (!resumeData.personalInfo.name || !resumeData.personalInfo.email) {
         dispatch(setError('Resume personal information is required'));
