@@ -548,9 +548,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             onClick={onClose}
           >
-            <div>
-              <X size={24} />
-            </div>
+            <X size={24} />
           </button>
         </div>
 
@@ -582,10 +580,10 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
             </div>
           )}
 
-          {/* OpenAI API Key Status */}
+          {/* OpenAI API Key Status - Show configuration status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              OpenAI API Configuration
+              Job Description *
             </label>
             <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
               <div className={`w-3 h-3 rounded-full ${
