@@ -1,6 +1,5 @@
 import * as pdfjsLib from "pdfjs-dist";
 import { PDFDocumentProxy } from "pdfjs-dist/types/src/display/api";
-import * as pdfParse from "pdf-parse";
 import * as mammoth from "mammoth";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.js?url";
 
@@ -8,32 +7,49 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 export async function extractTextFromPDF(file) {
   try {
-    // Primary method: Use PDF.js to extract text
-    const text = await extractWithPDFJS(file);
-    if (text && text.trim().length > 10) {
-      return text;
-    }
-    
-    // Fallback method 1: Use FileReader to read as text
-    const textContent = await readFileAsText(file);
-    if (textContent && textContent.trim().length > 10) {
-      return textContent;
-    }
-    
-    // Fallback method 2: Try to extract from DOCX if applicable
-    if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      const mammoth = await import('mammoth');
+    // Use PDF.js to extract text
+    try {
       const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      if (result.value && result.value.trim().length > 10) {
-        return result.value;
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let text = "";
+
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const content = await page.getTextContent();
+        const pageText = content.items
+          .map((item) => item.str)
+          .join(" ");
+        text += pageText + "\n";
       }
+
+      return text;
+    } catch (pdfJsError) {
+      console.warn("PDF.js extraction failed, trying FileReader fallback:", pdfJsError);
+      
+      // Try FileReader as a fallback
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          try {
+            const text = event.target.result;
+            if (typeof text === 'string' && text.trim().length > 0) {
+              resolve(text);
+            } else {
+              throw new Error("Empty text extracted");
+            }
+          } catch (readerError) {
+            reject(new Error("Failed to extract text using FileReader: " + readerError.message));
+          }
+        };
+        reader.onerror = function() {
+          reject(new Error("FileReader error occurred"));
+        };
+        reader.readAsText(file);
+      });
     }
-    
-    throw new Error('Unable to extract meaningful text from the file');
   } catch (error) {
-    console.error('Error extracting text from PDF:', error);
-    throw error;
+    console.error("All PDF extraction methods failed:", error);
+    throw new Error("Failed to extract text from PDF: All extraction methods failed - PDF may be image-based or corrupted");
   }
 }
 
