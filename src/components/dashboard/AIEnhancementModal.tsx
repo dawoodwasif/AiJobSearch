@@ -604,7 +604,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
             </p>
           </div>
 
-          {/* Job Description - First Field */}
+          {/* Job Description Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <FileText size={16} className="inline mr-2" />
