@@ -27,6 +27,7 @@
     "ldrs": "^1.0.1",
     "libphonenumber-js": "^1.10.57",
     "lucide-react": "^0.344.0",
+    "mammoth": "^1.9.1",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.3.93",
     "react": "^18.3.1",
