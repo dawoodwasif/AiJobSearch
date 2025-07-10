@@ -580,7 +580,6 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
             <X size={24} />
           </button>
         </div>
-        </div>
 
         <div className="p-6 space-y-6">
           {error && (
