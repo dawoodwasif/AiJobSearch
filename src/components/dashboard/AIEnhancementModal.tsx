@@ -210,8 +210,11 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
       // Get resume data from resume builder state
       const resumeData = resumeBuilder.resumeData;
 
-    try {
-      // Validate that we have the required data
+      const generated = await generateResumeAndCoverLetter(
+        jobDescription,
+        resumeData
+      );
+
       if (!jobDescription || !jobDescription.trim()) {
         dispatch(setError('Job description is required'));
         return;
