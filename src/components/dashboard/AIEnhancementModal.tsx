@@ -59,6 +59,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
   const [loading, setLoading] = React.useState(false);
   const [extractionProgress, setExtractionProgress] = React.useState<string>('');
   const [documentId] = React.useState<string>(generateUUID());
+  const [isDragOver, setIsDragOver] = React.useState(false);
   const { user } = useAuth();
   const config = ResumeExtractionService.getConfiguration();
 
@@ -99,6 +100,30 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
         dispatch(setError('Failed to read file. Please try again.'));
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    const pdfFile = files.find(file => file.type === 'application/pdf');
+    
+    if (pdfFile) {
+      handleFileSelect({ target: { files: [pdfFile] } } as any);
+    } else {
+      dispatch(setError('Please drop a PDF file'));
     }
   };
 
@@ -517,7 +542,16 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
             </label>
 
             {/* Local File Upload */}
-            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 mb-4">
+            <div 
+              className={`border-2 border-dashed rounded-lg p-6 mb-4 transition-colors ${
+                isDragOver 
+                  ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' 
+                  : 'border-gray-300 dark:border-gray-600'
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <div className="text-center">
                 <HardDrive className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <div className="flex flex-col items-center">
@@ -534,7 +568,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
                     />
                   </label>
                   <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    Only PDF or Text files (max 10MB)
+                    {isDragOver ? 'Drop your PDF here' : 'Only PDF or Text files (max 10MB) or drag & drop'}
                   </p>
                   {selectedFileMeta && (
                     <div className="mt-3 p-2 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center gap-2">
