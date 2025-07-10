@@ -551,23 +551,29 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
           </div>
         )}
 
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <Brain className="text-white" size={20} />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                AI Enhanced Resume & Cover Letter Generator
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Document ID: {documentId.slice(0, 8)}...
-                {applicationData && (
-                  <span className="ml-2">• {applicationData.position} at {applicationData.company_name}</span>
-                )}
-              </p>
-            </div>
+        {/* OpenAI API Key Status */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            OpenAI API Configuration
+          </label>
+          <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+            <div className={`w-3 h-3 rounded-full ${
+              import.meta.env.VITE_OPENAI_API_KEY 
+                ? 'bg-green-500' 
+                : 'bg-red-500'
+            }`}></div>
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              {import.meta.env.VITE_OPENAI_API_KEY 
+                ? 'OpenAI API key is configured' 
+                : 'OpenAI API key is not configured'}
+            </span>
           </div>
-          <button
+          {!import.meta.env.VITE_OPENAI_API_KEY && (
+            <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+              Please configure VITE_OPENAI_API_KEY in your environment variables.
+            </p>
+          )}
+        </div>
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
