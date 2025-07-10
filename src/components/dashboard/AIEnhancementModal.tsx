@@ -1,10 +1,13 @@
 import React, { useEffect } from 'react';
-import { X, Download, FileText, CheckCircle, AlertCircle, Target, TrendingUp, Award, Brain, Settings, Upload, HardDrive } from 'lucide-react';
+import { X, Download, FileText, CheckCircle, AlertCircle, Target, TrendingUp, Award, Brain, Settings, Upload, HardDrive, Loader2 } from 'lucide-react';
 import OptimizationResults from './OptimizationResults';
 import { ResumeExtractionService } from '../../services/resumeExtractionService';
 import { AIEnhancementService } from '../../services/aiEnhancementService';
 import { UserProfileData } from '../../services/profileService';
 import { useAuth } from '../../hooks/useAuth';
+import { extractTextFromPDF } from '../../utils/pdfExtractor';
+import { generateResumeAndCoverLetter } from '../../services/openaiService';
+import EditablePDFViewer from '../pdf/EditablePDFViewer';
 
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
@@ -60,6 +63,10 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
   const [extractionProgress, setExtractionProgress] = React.useState<string>('');
   const [documentId] = React.useState<string>(generateUUID());
   const [isDragOver, setIsDragOver] = React.useState(false);
+  const [generatedContent, setGeneratedContent] = React.useState<any>(null);
+  const [showPDFViewer, setShowPDFViewer] = React.useState(false);
+  const [openaiApiKey, setOpenaiApiKey] = React.useState('');
+  const [extractedText, setExtractedText] = React.useState('');
   const { user } = useAuth();
   const config = ResumeExtractionService.getConfiguration();
 
@@ -81,7 +88,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
         return;
       }
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         // Always use base64 string after comma (DataURL format)
         const base64 = reader.result as string;
         dispatch(setSelectedFile({
@@ -95,6 +102,15 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
         }));
         dispatch(setError(''));
         dispatch(setCloudFileUrl(''));
+        
+        // Extract text from PDF
+        try {
+          const text = await extractTextFromPDF(file);
+          setExtractedText(text);
+        } catch (error) {
+          console.error('Error extracting text from PDF:', error);
+          dispatch(setError('Failed to extract text from PDF'));
+        }
       };
       reader.onerror = () => {
         dispatch(setError('Failed to read file. Please try again.'));
@@ -160,6 +176,16 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
       return;
     }
 
+    if (!openaiApiKey.trim()) {
+      dispatch(setError('Please provide all required information including OpenAI API key'));
+      return;
+    }
+
+    if (!extractedText) {
+      dispatch(setError('No text extracted from PDF. Please try uploading the file again.'));
+      return;
+    }
+
     // Check API configuration
     if (!config.hasApiKey) {
       dispatch(setError('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your environment variables.'));
@@ -178,6 +204,25 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
     setExtractionProgress('');
 
     try {
+      const generated = await generateResumeAndCoverLetter(
+        extractedText,
+        jobDescription,
+        openaiApiKey
+      );
+
+      setGeneratedContent(generated);
+      setShowPDFViewer(true);
+      
+      // Store results for potential future use
+      dispatch(setOptimizationResults({
+        resume: generated.resume,
+        coverLetter: generated.coverLetter,
+        originalText: extractedText,
+        jobDescription: jobDescription
+      }));
+      
+      dispatch(setShowResults(true));
+
       let fileToProcess: File | null = null;
       if (selectedFileMeta && selectedFileContent) {
         // Convert base64 to File (with null check)
@@ -420,6 +465,14 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
   }
 
   return (
+    <>
+      {showPDFViewer && generatedContent && (
+        <EditablePDFViewer
+          resumeData={generatedContent.resume}
+          coverLetterData={generatedContent.coverLetter}
+          onClose={() => setShowPDFViewer(false)}
+        />
+      )}
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="relative bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         {/* Loader Overlay */}
@@ -516,6 +569,24 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
             </div>
           )}
 
+          {/* OpenAI API Key Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              OpenAI API Key *
+            </label>
+            <input
+              type="password"
+              value={openaiApiKey}
+              onChange={(e) => setOpenaiApiKey(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Enter your OpenAI API key"
+              required
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Your API key is used to generate tailored content and is not stored.
+            </p>
+          </div>
+
           {/* Job Description - First Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -573,9 +644,16 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
                   {selectedFileMeta && (
                     <div className="mt-3 p-2 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center gap-2">
                       <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
-                      <p className="text-sm text-green-700 dark:text-green-400">
-                        Selected: {selectedFileMeta.name}
-                      </p>
+                      <div className="flex flex-col">
+                        <p className="text-sm text-green-700 dark:text-green-400">
+                          Selected: {selectedFileMeta.name}
+                        </p>
+                        {extractedText && (
+                          <span className="text-xs text-green-600 dark:text-green-400">
+                            ✓ Text extracted successfully ({extractedText.length} characters)
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -588,12 +666,12 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
             <button
               type="button"
               onClick={handleGenerateAI}
-              disabled={loading || (!selectedFileMeta && !cloudFileUrl) || !(jobDescription || persistedJobDescription || '').trim() || !config.hasApiKey}
+              disabled={loading || (!selectedFileMeta && !cloudFileUrl) || !(jobDescription || persistedJobDescription || '').trim() || !openaiApiKey.trim()}
               className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-all disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <Loader2 size={20} className="animate-spin" />
                   {extractionProgress || 'Processing...'}
                 </>
               ) : (
@@ -614,6 +692,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
         </div>
       </div>
     </div>
+    </>
   );
 };
 
