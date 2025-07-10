@@ -505,7 +505,6 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
 
         <div className="space-y-6 sm:space-y-8">
           <StatsCards stats={stats} />
@@ -600,7 +599,6 @@ const Dashboard: React.FC = () => {
         onCancel={() => setConfirmationModal(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
-  )
   );
 };
 
