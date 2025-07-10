@@ -534,50 +534,23 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
           </div>
         )}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-        {/* Debug Box for Extracted Text */}
-        {extractedText && (
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Extracted Text (Debug)
-            </label>
-            <div className="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-4 max-h-60 overflow-y-auto">
-              <pre className="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-mono">
-                {extractedText}
-              </pre>
-            </div>
-            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Character count: {extractedText.length}
-            </div>
-          </div>
-        )}
-
-        {/* OpenAI API Key Status */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            OpenAI API Configuration
-          </label>
-          <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-            <div className={`w-3 h-3 rounded-full ${
-              import.meta.env.VITE_OPENAI_API_KEY 
-                ? 'bg-green-500' 
-                : 'bg-red-500'
-            }`}></div>
-            <span className="text-sm text-gray-700 dark:text-gray-300">
-              {import.meta.env.VITE_OPENAI_API_KEY 
-                ? 'OpenAI API key is configured' 
-                : 'OpenAI API key is not configured'}
-            </span>
-          </div>
-          {!import.meta.env.VITE_OPENAI_API_KEY && (
-            <p className="text-xs text-red-500 dark:text-red-400 mt-1">
-              Please configure VITE_OPENAI_API_KEY in your environment variables.
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <Brain className="text-blue-600" size={24} />
+              AI Resume & Cover Letter Enhancement
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Upload your resume and let AI optimize it for this specific job
             </p>
-          )}
-        </div>
+          </div>
+          <button
+            type="button"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
-            <X size={24} />
+            <div>
+              <X size={24} />
+            </div>
           </button>
         </div>
 
@@ -591,6 +564,47 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Debug Box for Extracted Text */}
+          {extractedText && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Extracted Text (Debug)
+              </label>
+              <div className="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-4 max-h-60 overflow-y-auto">
+                <pre className="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-mono">
+                  {extractedText}
+                </pre>
+              </div>
+              <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Character count: {extractedText.length}
+              </div>
+            </div>
+          )}
+
+          {/* OpenAI API Key Status */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              OpenAI API Configuration
+            </label>
+            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+              <div className={`w-3 h-3 rounded-full ${
+                import.meta.env.VITE_OPENAI_API_KEY 
+                  ? 'bg-green-500' 
+                  : 'bg-red-500'
+              }`}></div>
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                {import.meta.env.VITE_OPENAI_API_KEY 
+                  ? 'OpenAI API key is configured' 
+                  : 'OpenAI API key is not configured'}
+              </span>
+            </div>
+            {!import.meta.env.VITE_OPENAI_API_KEY && (
+              <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                Please configure VITE_OPENAI_API_KEY in your environment variables.
+              </p>
+            )}
+          </div>
 
           {/* OpenAI API Key Input */}
           <div>
