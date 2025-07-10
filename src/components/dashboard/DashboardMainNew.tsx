@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Briefcase, TrendingUp, Calendar, MapPin, DollarSign, Clock, ExternalLink, Wand2, MessageSquare, BarChart3, Target, Users, Award, ChevronRight, Filter, SortDesc, Eye, Edit, Trash2, Building, User, Phone, Mail, Settings, LogOut, Bell, Download, FileText } from 'lucide-react';
+import DashboardHeader from './DashboardHeader';
 import StatsCards from './StatsCards';
 import ApplicationsTable from './ApplicationsTable';
 import JobDescriptionModal from './JobDescriptionModal';
