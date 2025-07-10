@@ -300,3 +300,6 @@ export class AIEnhancementService {
         }
     }
 }
+
+// Export the static method as a standalone function for backward compatibility
+export const optimizeResumeWithAI = AIEnhancementService.optimizeResumeWithAI.bind(AIEnhancementService);
