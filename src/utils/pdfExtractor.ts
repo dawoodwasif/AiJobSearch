@@ -2,10 +2,73 @@ import * as pdfjsLib from "pdfjs-dist";
 import { PDFDocumentProxy } from "pdfjs-dist/types/src/display/api";
 import * as pdfParse from "pdf-parse";
 import * as mammoth from "mammoth";
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.js?url";
 
-// Set up the PDF.js worker
-const pdfWorkerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+
+export async function extractTextFromPDF(file) {
+  try {
+    // Primary method: Use PDF.js to extract text
+    const text = await extractWithPDFJS(file);
+    if (text && text.trim().length > 10) {
+      return text;
+    }
+    
+    // Fallback method 1: Use FileReader to read as text
+    const textContent = await readFileAsText(file);
+    if (textContent && textContent.trim().length > 10) {
+      return textContent;
+    }
+    
+    // Fallback method 2: Try to extract from DOCX if applicable
+    if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      const mammoth = await import('mammoth');
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      if (result.value && result.value.trim().length > 10) {
+        return result.value;
+      }
+    }
+    
+    throw new Error('Unable to extract meaningful text from the file');
+  } catch (error) {
+    console.error('Error extracting text from PDF:', error);
+    throw error;
+  }
+}
+
+async function extractWithPDFJS(file) {
+  try {
+    const data = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data }).promise;
+    
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+    
+    return fullText.trim();
+  } catch (error) {
+    console.error('PDF.js extraction failed:', error);
+    throw error;
+  }
+}
+
+async function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    try {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+      reader.readAsText(file);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 
 /**
  * Extracts text from a PDF file using PDF.js
