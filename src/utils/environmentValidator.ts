@@ -3,6 +3,38 @@
  * Ensures all required environment variables are properly configured
  */
 
+// Validate Supabase configuration
+export const validateSupabaseConfig = () => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  
+  const errors: string[] = [];
+  
+  if (!supabaseUrl) {
+    errors.push('VITE_SUPABASE_URL is missing from environment variables');
+  } else {
+    try {
+      const url = new URL(supabaseUrl);
+      if (!url.hostname.includes('supabase.co')) {
+        errors.push('VITE_SUPABASE_URL does not appear to be a valid Supabase URL');
+      }
+    } catch {
+      errors.push('VITE_SUPABASE_URL is not a valid URL format');
+    }
+  }
+  
+  if (!supabaseAnonKey) {
+    errors.push('VITE_SUPABASE_ANON_KEY is missing from environment variables');
+  } else if (supabaseAnonKey.length < 100) {
+    errors.push('VITE_SUPABASE_ANON_KEY appears to be invalid (too short)');
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
 export interface EnvironmentConfig {
   supabase: {
     url: string;
