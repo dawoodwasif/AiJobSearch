@@ -5,7 +5,7 @@ import { ResumeExtractionService } from '../../services/resumeExtractionService'
 import { AIEnhancementService } from '../../services/aiEnhancementService';
 import { UserProfileData } from '../../services/profileService';
 import { useAuth } from '../../hooks/useAuth';
-import { extractTextFromPDF } from '../../utils/pdfExtractor';
+import { extractTextFromFile } from '../../utils/pdfExtractor';
 import { generateResumeAndCoverLetter } from '../../services/openaiService';
 import EditablePDFViewer from '../pdf/EditablePDFViewer';
 
@@ -103,13 +103,13 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
         dispatch(setError(''));
         dispatch(setCloudFileUrl(''));
         
-        // Extract text from PDF
+        // Extract text from file
         try {
-          const text = await extractTextFromPDF(file);
+          const text = await extractTextFromFile(file);
           setExtractedText(text);
         } catch (error) {
-          console.error('Error extracting text from PDF:', error);
-          dispatch(setError('Failed to extract text from PDF'));
+          console.error('Error extracting text from file:', error);
+          dispatch(setError('Failed to extract text from file'));
         }
       };
       reader.onerror = () => {
@@ -184,7 +184,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
     }
 
     if (!extractedText) {
-      dispatch(setError('No text extracted from PDF. Please try uploading the file again.'));
+      dispatch(setError('No text extracted from file. Please try uploading the file again.'));
       return;
     }
 
@@ -641,13 +641,13 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
                     <input
                       type="file"
                       className="hidden"
-                      accept=".pdf,.txt"
+                      accept=".pdf,.docx,.txt"
                       onChange={handleFileSelect}
                       key={selectedFileMeta ? selectedFileMeta.name + selectedFileMeta.lastModified : 'empty'}
                     />
                   </label>
                   <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    {isDragOver ? 'Drop your PDF here' : 'Only PDF or Text files (max 10MB) or drag & drop'}
+                    {isDragOver ? 'Drop your file here' : 'Supports PDF, Word (.docx), and text files'}
                   </p>
                   {selectedFileMeta && (
                     <div className="mt-3 p-2 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center gap-2">
