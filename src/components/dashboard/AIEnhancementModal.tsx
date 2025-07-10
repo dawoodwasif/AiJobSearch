@@ -49,8 +49,8 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
   onClose
 }) => {
   const dispatch = useAppDispatch();
-  const {
   const resumeBuilder = useAppSelector((state) => state.resumeBuilder);
+  const {
     selectedFileMeta,
     selectedFileContent,
     cloudProvider,
