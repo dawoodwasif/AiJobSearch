@@ -586,6 +586,7 @@ const Dashboard: React.FC = () => {
         onCancel={() => setConfirmationModal(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
+  )
   );
 };
 
