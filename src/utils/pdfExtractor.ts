@@ -3,7 +3,9 @@ import { PDFDocumentProxy } from "pdfjs-dist/types/src/display/api";
 import * as mammoth from "mammoth";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.js?url";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+// Set the worker source path directly
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+
 
 export async function extractTextFromPDF(file) {
   try {
