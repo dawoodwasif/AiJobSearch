@@ -1,85 +1,119 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { X, Upload, FileText, Download, Edit3, Eye, Wand2 } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { X, Download, FileText, CheckCircle, AlertCircle, Target, TrendingUp, Award, Brain, Settings, Upload, HardDrive } from 'lucide-react';
+import OptimizationResults from './OptimizationResults';
+import { ResumeExtractionService } from '../../services/resumeExtractionService';
+import { AIEnhancementService } from '../../services/aiEnhancementService';
+import { UserProfileData } from '../../services/profileService';
+import { useAuth } from '../../hooks/useAuth';
+
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { closeModal, setSelectedFile, setError, setShowResults, setOptimizationResults } from '../../store/aiEnhancementModalSlice';
-import * as pdfjsLib from 'pdfjs-dist';
-import { Document, Page, pdfjs } from 'react-pdf';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import {
+  setSelectedFile,
+  setCloudProvider,
+  setCloudFileUrl,
+  setError,
+  setShowResults,
+  setOptimizationResults,
+  resetState,
+} from '../../store/aiEnhancementModalSlice';
 
-// Set up PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-
-interface ExtractedResumeData {
-  personalInfo: {
-    name: string;
-    email: string;
-    phone: string;
-    location: string;
+interface AIEnhancementModalProps {
+  jobDescription: string;
+  applicationData?: {
+    position: string;
+    company_name: string;
+    location?: string;
   };
-  experience: string;
-  skills: string[];
-  education: string;
+  detailedUserProfile?: UserProfileData | null;
+  onSave: (resumeUrl: string, coverLetterUrl: string) => void;
+  onClose: () => void;
 }
 
-interface GeneratedDocuments {
-  resume: {
-    content: string;
-    sections: {
-      header: string;
-      summary: string;
-      experience: string;
-      skills: string;
-      education: string;
-    };
-  };
-  coverLetter: {
-    content: string;
-    sections: {
-      opening: string;
-      body: string[];
-      closing: string;
-    };
-  };
-}
+// Generate a random UUID v4
+const generateUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
 
-const AIEnhancementModal: React.FC = () => {
+const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
+  jobDescription,
+  applicationData,
+  detailedUserProfile,
+  onSave,
+  onClose
+}) => {
   const dispatch = useAppDispatch();
-  const { 
-    isOpen, 
-    jobDescription, 
-    selectedFileMeta, 
-    selectedFileContent, 
-    error, 
-    showResults 
+  const {
+    selectedFileMeta,
+    selectedFileContent,
+    cloudProvider,
+    cloudFileUrl,
+    error,
+    showResults,
+    optimizationResults,
+    jobDescription: persistedJobDescription,
   } = useAppSelector((state) => state.aiEnhancementModal);
+  const [loading, setLoading] = React.useState(false);
+  const [extractionProgress, setExtractionProgress] = React.useState<string>('');
+  const [documentId] = React.useState<string>(generateUUID());
+  const [isDragOver, setIsDragOver] = React.useState(false);
+  const { user } = useAuth();
+  const config = ResumeExtractionService.getConfiguration();
 
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [extractedText, setExtractedText] = useState<string>('');
-  const [generatedDocuments, setGeneratedDocuments] = useState<GeneratedDocuments | null>(null);
-  const [activeTab, setActiveTab] = useState<'resume' | 'coverLetter'>('resume');
-  const [editableContent, setEditableContent] = useState<string>('');
-  const [isDragOver, setIsDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Keep jobDescription in sync with Redux (for persistence)
+  useEffect(() => {
+    if (jobDescription && jobDescription !== persistedJobDescription) {
+      dispatch({ type: 'aiEnhancementModal/openModal', payload: { jobDescription } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobDescription]);
 
-  const handleClose = () => {
-    dispatch(closeModal());
-    setExtractedText('');
-    setGeneratedDocuments(null);
-    setEditableContent('');
+  // File select handler: reads file as base64 and stores meta/content in Redux
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const validation = ResumeExtractionService.validateResumeFile(file);
+      if (!validation.isValid) {
+        dispatch(setError(validation.error || 'Invalid file'));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        // Always use base64 string after comma (DataURL format)
+        const base64 = reader.result as string;
+        dispatch(setSelectedFile({
+          meta: {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            lastModified: file.lastModified,
+          },
+          content: base64,
+        }));
+        dispatch(setError(''));
+        dispatch(setCloudFileUrl(''));
+      };
+      reader.onerror = () => {
+        dispatch(setError('Failed to read file. Please try again.'));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
-  }, []);
+  };
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
+  const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-  }, []);
+  };
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
     
@@ -87,406 +121,496 @@ const AIEnhancementModal: React.FC = () => {
     const pdfFile = files.find(file => file.type === 'application/pdf');
     
     if (pdfFile) {
-      handleFileSelection(pdfFile);
+      handleFileSelect({ target: { files: [pdfFile] } } as any);
     } else {
       dispatch(setError('Please drop a PDF file'));
     }
-  }, [dispatch]);
-
-  const handleFileSelection = async (file: File) => {
-    if (file.type !== 'application/pdf') {
-      dispatch(setError('Please select a PDF file'));
-      return;
-    }
-
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      
-      dispatch(setSelectedFile({
-        meta: {
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          lastModified: file.lastModified
-        },
-        content: base64
-      }));
-
-      // Extract text from PDF
-      await extractTextFromPDF(arrayBuffer);
-    } catch (error) {
-      dispatch(setError('Failed to process PDF file'));
-    }
   };
 
-  const extractTextFromPDF = async (arrayBuffer: ArrayBuffer) => {
-    try {
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      let fullText = '';
-
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
-        fullText += pageText + '\n';
-      }
-
-      setExtractedText(fullText);
-    } catch (error) {
-      dispatch(setError('Failed to extract text from PDF'));
-    }
+  const handleCloudProviderChange = (provider: string) => {
+    dispatch(setCloudProvider(provider));
+    // Clear local file if cloud provider is selected
+    dispatch(setSelectedFile({ meta: { name: '', type: '', size: 0, lastModified: 0 }, content: '' }));
+    dispatch(setCloudFileUrl(''));
   };
 
-  const generateOptimizedDocuments = async () => {
-    if (!extractedText || !jobDescription) {
-      dispatch(setError('Please upload a resume and provide a job description'));
-      return;
-    }
-
-    setIsProcessing(true);
-    dispatch(setError(''));
-
+  const downloadFileFromUrl = async (url: string): Promise<File> => {
     try {
-      // Call OpenAI to generate optimized resume and cover letter
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: `You are a professional resume and cover letter writer. Given a resume text and job description, create an optimized resume and cover letter tailored to the job. Return the response as JSON with the following structure:
-              {
-                "resume": {
-                  "content": "Full optimized resume content in HTML format",
-                  "sections": {
-                    "header": "Name and contact info",
-                    "summary": "Professional summary",
-                    "experience": "Work experience section",
-                    "skills": "Skills section",
-                    "education": "Education section"
-                  }
-                },
-                "coverLetter": {
-                  "content": "Full cover letter content in HTML format",
-                  "sections": {
-                    "opening": "Opening paragraph",
-                    "body": ["Body paragraph 1", "Body paragraph 2"],
-                    "closing": "Closing paragraph"
-                  }
-                }
-              }`
-            },
-            {
-              role: 'user',
-              content: `Resume Text:\n${extractedText}\n\nJob Description:\n${jobDescription}\n\nPlease create an optimized resume and cover letter tailored to this job.`
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 3000
-        })
-      });
-
+      const response = await fetch(url);
       if (!response.ok) {
-        throw new Error('Failed to generate optimized documents');
+        throw new Error(`Failed to download file: ${response.status}`);
       }
 
-      const data = await response.json();
-      const generatedContent = JSON.parse(data.choices[0].message.content);
-      
-      setGeneratedDocuments(generatedContent);
-      setEditableContent(generatedContent.resume.content);
-      dispatch(setShowResults(true));
-      dispatch(setOptimizationResults(generatedContent));
-
+      const blob = await response.blob();
+      const filename = url.split('/').pop() || 'resume.pdf';
+      return new File([blob], filename, { type: blob.type });
     } catch (error) {
-      dispatch(setError('Failed to generate optimized documents. Please check your OpenAI API key.'));
-    } finally {
-      setIsProcessing(false);
+      throw new Error('Failed to download file from URL. Please check the URL and permissions.');
     }
   };
 
-  const handleTabChange = (tab: 'resume' | 'coverLetter') => {
-    setActiveTab(tab);
-    if (generatedDocuments) {
-      setEditableContent(
-        tab === 'resume' 
-          ? generatedDocuments.resume.content 
-          : generatedDocuments.coverLetter.content
-      );
+  const handleGenerateAI = async () => {
+    if (!selectedFileMeta && !cloudFileUrl) {
+      dispatch(setError('Please select a resume file or provide a cloud file URL'));
+      return;
     }
-  };
 
-  const downloadAsPDF = async () => {
-    if (!editableContent) return;
+    if (!jobDescription.trim()) {
+      dispatch(setError('Job description is required for AI enhancement'));
+      return;
+    }
+
+    // Check API configuration
+    if (!config.hasApiKey) {
+      dispatch(setError('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your environment variables.'));
+      return;
+    }
+
+    // Validate enhancement request
+    const validation = AIEnhancementService.validateEnhancementRequest(jobDescription);
+    if (!validation.isValid) {
+      dispatch(setError(validation.error || 'Invalid request'));
+      return;
+    }
+
+    setLoading(true);
+    dispatch(setError(''));
+    setExtractionProgress('');
 
     try {
-      // Create a temporary div to render the content
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = editableContent;
-      tempDiv.style.width = '210mm';
-      tempDiv.style.padding = '20mm';
-      tempDiv.style.fontFamily = 'Arial, sans-serif';
-      tempDiv.style.fontSize = '12px';
-      tempDiv.style.lineHeight = '1.5';
-      tempDiv.style.color = '#000';
-      tempDiv.style.backgroundColor = '#fff';
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      document.body.appendChild(tempDiv);
-
-      // Convert to canvas
-      const canvas = await html2canvas(tempDiv, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true
-      });
-
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 210;
-      const pageHeight = 295;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+      let fileToProcess: File | null = null;
+      if (selectedFileMeta && selectedFileContent) {
+        // Convert base64 to File (with null check)
+        const arr = selectedFileContent.split(',');
+        const mimeMatch = arr[0].match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+        const bstr = arr[1] ? atob(arr[1]) : '';
+        let n = bstr.length, u8arr = new Uint8Array(n);
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
+        fileToProcess = new File([u8arr], selectedFileMeta.name, { type: mime });
+      }
+      // If using cloud URL, download the file first
+      if (cloudFileUrl && !fileToProcess) {
+        setExtractionProgress('Downloading file from cloud storage...');
+        fileToProcess = await downloadFileFromUrl(cloudFileUrl);
       }
 
-      // Download the PDF
-      const fileName = activeTab === 'resume' ? 'optimized-resume.pdf' : 'cover-letter.pdf';
-      pdf.save(fileName);
+      if (!fileToProcess) {
+        throw new Error('No file to process');
+      }
 
-      // Clean up
-      document.body.removeChild(tempDiv);
-    } catch (error) {
-      dispatch(setError('Failed to generate PDF'));
+      // Step 1: Extract resume data using AI
+      setExtractionProgress('Extracting resume data using AI...');
+      const extractionResult = await ResumeExtractionService.extractResumeJson(fileToProcess, {
+        modelType: config.defaultModelType,
+        model: config.defaultModel,
+        fileId: documentId // Use the persistent UUID
+      });
+
+      if (!extractionResult.success) {
+        // Handle specific API errors
+        if (extractionResult.error?.includes('PDF format not supported') ||
+          extractionResult.error?.includes('format not supported') ||
+          extractionResult.error?.includes('unsupported file type')) {
+          throw new Error('PDF format not supported by the current API. Please try uploading a Word document (.docx) or text file (.txt) instead.');
+        }
+
+        if (extractionResult.error?.includes('API key') ||
+          extractionResult.error?.includes('authentication')) {
+          throw new Error('API authentication failed. Please check your OpenAI API key configuration.');
+        }
+
+        if (extractionResult.error?.includes('rate limit') ||
+          extractionResult.error?.includes('quota')) {
+          throw new Error('API rate limit exceeded. Please try again in a few minutes.');
+        }
+
+        throw new Error(extractionResult.error || 'Failed to extract resume data. The API may be temporarily unavailable.');
+      }
+
+      setExtractionProgress('Processing extracted data...');
+
+      // Parse the extracted resume data
+      const parsedResumeData = ResumeExtractionService.parseResumeData(extractionResult.resume_json);
+
+      if (!parsedResumeData) {
+        throw new Error('Failed to parse extracted resume data. The resume format may not be compatible.');
+      }
+
+      // Step 2: Enhance resume using AI analysis
+      setExtractionProgress('Analyzing resume against job description...');
+
+      let enhancementResult;
+      try {
+        // Try using the JSON mode first (more reliable)
+        enhancementResult = await AIEnhancementService.enhanceWithJson(
+          extractionResult.resume_json,
+          jobDescription,
+          {
+            modelType: config.defaultModelType,
+            model: config.defaultModel,
+            fileId: documentId
+          }
+        );
+      } catch (jsonError) {
+        // Fallback to file mode
+        setExtractionProgress('Retrying analysis with file upload...');
+        enhancementResult = await AIEnhancementService.enhanceWithFile(
+          fileToProcess,
+          jobDescription,
+          {
+            modelType: config.defaultModelType,
+            model: config.defaultModel,
+            fileId: documentId
+          }
+        );
+      }
+
+      if (!enhancementResult.success) {
+        throw new Error(enhancementResult.error || 'Failed to analyze resume. Please try again.');
+      }
+
+      // Normalize the response to ensure all fields exist
+      const normalizedResult = AIEnhancementService.normalizeEnhancementResponse(enhancementResult);
+
+      setExtractionProgress('Generating optimization recommendations...');
+
+      // Generate mock URLs for the enhanced documents (will be replaced by real PDF generation)
+      const timestamp = Date.now();
+      const enhancedResumeUrl = `https://example.com/ai-enhanced-resume-${documentId}.pdf`;
+      const enhancedCoverLetterUrl = `https://example.com/ai-enhanced-cover-letter-${documentId}.pdf`;
+
+      // Combine real AI analysis with our UI structure
+      const optimizationResults = {
+        matchScore: normalizedResult.analysis.match_score,
+        summary: normalizedResult.analysis.match_score >= 80
+          ? `Excellent match! Your resume shows strong alignment with this position (${normalizedResult.analysis.match_score}% match). The AI has identified key strengths and provided targeted recommendations for optimization.`
+          : normalizedResult.analysis.match_score >= 70
+            ? `Good match! Your resume aligns well with this position (${normalizedResult.analysis.match_score}% match). The AI has identified areas for improvement to strengthen your application.`
+            : `Moderate match (${normalizedResult.analysis.match_score}% match). The AI has identified significant opportunities to better align your resume with this position.`,
+
+        // Use real AI analysis data
+        strengths: normalizedResult.analysis.strengths.length > 0
+          ? normalizedResult.analysis.strengths
+          : [
+            `Strong technical background with ${parsedResumeData.experience?.length || 0} work experience entries`,
+            `Comprehensive skill set including relevant technologies`,
+            `Educational background aligns with job requirements`
+          ],
+
+        gaps: normalizedResult.analysis.gaps.length > 0
+          ? normalizedResult.analysis.gaps
+          : [
+            "Some industry-specific keywords could be emphasized more prominently",
+            "Consider adding more quantified achievements with specific metrics"
+          ],
+
+        suggestions: normalizedResult.analysis.suggestions.length > 0
+          ? normalizedResult.analysis.suggestions
+          : [
+            "Incorporate more action verbs and industry-specific terminology",
+            "Add specific metrics and percentages to quantify your achievements",
+            "Consider reorganizing sections to highlight most relevant experience first"
+          ],
+
+        optimizedResumeUrl: enhancedResumeUrl,
+        optimizedCoverLetterUrl: enhancedCoverLetterUrl,
+
+        // Use real keyword analysis
+        keywordAnalysis: {
+          coverageScore: normalizedResult.analysis.keyword_analysis.keyword_density_score,
+          coveredKeywords: normalizedResult.analysis.keyword_analysis.present_keywords,
+          missingKeywords: normalizedResult.analysis.keyword_analysis.missing_keywords
+        },
+
+        // Enhanced experience optimization using real data
+        experienceOptimization: parsedResumeData.experience?.map((exp: any, index: number) => ({
+          company: exp.company || 'Unknown Company',
+          position: exp.position || 'Unknown Position',
+          relevanceScore: Math.max(70, normalizedResult.analysis.match_score - (index * 5)),
+          included: index < 3, // Include top 3 most relevant
+          reasoning: index >= 3 ? "Less relevant to target position based on AI analysis" : undefined
+        })) || [],
+
+        // Enhanced skills optimization
+        skillsOptimization: {
+          technicalSkills: normalizedResult.enhancements.enhanced_skills.length > 0
+            ? normalizedResult.enhancements.enhanced_skills
+            : Array.isArray(parsedResumeData.skills) ? parsedResumeData.skills.slice(0, 8) : [],
+          softSkills: ["Leadership", "Problem Solving", "Communication", "Team Collaboration"],
+          missingSkills: normalizedResult.analysis.keyword_analysis.missing_keywords.slice(0, 5)
+        },
+
+        // Include parsed resume data
+        parsedResume: parsedResumeData,
+
+        // Enhanced metadata
+        extractionMetadata: {
+          documentId: documentId,
+          extractedTextLength: extractionResult.extracted_text_length,
+          processingTime: Date.now() - timestamp,
+          modelUsed: normalizedResult.metadata.model_used,
+          apiBaseUrl: config.apiBaseUrl,
+          sectionsAnalyzed: normalizedResult.metadata.resume_sections_analyzed
+        },
+
+        // Include AI enhancements
+        aiEnhancements: {
+          enhancedSummary: normalizedResult.enhancements.enhanced_summary,
+          enhancedExperienceBullets: normalizedResult.enhancements.enhanced_experience_bullets,
+          coverLetterOutline: normalizedResult.enhancements.cover_letter_outline,
+          sectionRecommendations: normalizedResult.analysis.section_recommendations
+        },
+
+        // Include raw AI response for debugging
+        rawAIResponse: normalizedResult,
+
+        // Add job context for PDF generation
+        jobDescription: jobDescription,
+        applicationData: applicationData,
+
+        // Add detailed user profile and user for cover letter generation
+        detailedUserProfile: detailedUserProfile,
+        user: user
+      };
+
+      dispatch(setOptimizationResults(optimizationResults));
+      dispatch(setShowResults(true));
+
+    } catch (err: any) {
+      // Provide user-friendly error messages with improved HTTP 500 handling
+      let userMessage = err.message;
+
+      // Handle HTTP 500 errors specifically
+      if (err.message.includes('HTTP error! status: 500') || err.message.includes('status: 500')) {
+        userMessage = 'The AI service is experiencing temporary issues on the server side. This is usually resolved quickly. Please try again in a few moments, or contact support if the problem persists.';
+      } else if (err.message.includes('Failed to fetch') || err.message.includes('network')) {
+        userMessage = 'Unable to connect to the AI service. Please check your internet connection and try again.';
+      } else if (err.message.includes('timeout') || err.message.includes('timed out')) {
+        userMessage = 'The AI processing is taking longer than expected. Please try again with a smaller file or try again later.';
+      } else if (err.message.includes('API key')) {
+        userMessage = 'API configuration error. Please contact support for assistance.';
+      } else if (!err.message || err.message === 'Failed to generate AI-enhanced documents. Please try again.') {
+        userMessage = 'The AI service is temporarily unavailable. Please try again in a few minutes or contact support if the issue persists.';
+      }
+
+      dispatch(setError(userMessage));
+    } finally {
+      setLoading(false);
+      setExtractionProgress('');
     }
   };
 
-  if (!isOpen) return null;
+  const handleResultsClose = () => {
+    dispatch(setShowResults(false));
+    // Save the URLs to the parent component
+    if (optimizationResults) {
+      onSave(optimizationResults.optimizedResumeUrl, optimizationResults.optimizedCoverLetterUrl);
+    }
+    onClose();
+  };
+
+  if (showResults && optimizationResults) {
+    return (
+      <OptimizationResults
+        results={optimizationResults}
+        onClose={handleResultsClose}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-6xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-        <div className="p-6 space-y-8">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <Wand2 className="h-6 w-6 text-white" />
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Loader Overlay */}
+        {loading && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm transition-all rounded-lg animate-fade-in">
+            <div className="flex flex-col items-center gap-6">
+              {/* Animated Brain Icon with Pulse */}
+              <div className="relative flex items-center justify-center">
+                <span className="absolute inline-flex h-16 w-16 rounded-full bg-blue-400 opacity-40 animate-ping"></span>
+                <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg animate-bounce-slow">
+                  <Brain className="text-white animate-spin-slow" size={36} />
+                </span>
               </div>
+              {/* Progress Bar */}
+              <div className="w-64 h-3 bg-blue-100 dark:bg-blue-900 rounded-full overflow-hidden shadow-inner">
+                <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-progress-bar"></div>
+              </div>
+              <span className="text-lg font-semibold text-blue-700 dark:text-blue-300 animate-fade-in-text">
+                {extractionProgress || "Generating your AI-enhanced resume & cover letter..."}
+              </span>
+            </div>
+            <style>{`
+              @keyframes bounce-slow {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-12px); }
+              }
+              .animate-bounce-slow {
+                animation: bounce-slow 2s infinite;
+              }
+              @keyframes spin-slow {
+                100% { transform: rotate(360deg); }
+              }
+              .animate-spin-slow {
+                animation: spin-slow 3s linear infinite;
+              }
+              @keyframes progress-bar {
+                0% { width: 0%; }
+                80% { width: 90%; }
+                100% { width: 100%; }
+              }
+              .animate-progress-bar {
+                animation: progress-bar 2.5s cubic-bezier(0.4,0,0.2,1) infinite;
+              }
+              @keyframes fade-in {
+                from { opacity: 0; }
+                to { opacity: 1; }
+              }
+              .animate-fade-in {
+                animation: fade-in 0.7s ease-in;
+              }
+              @keyframes fade-in-text {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+              .animate-fade-in-text {
+                animation: fade-in-text 1.2s ease-in;
+              }
+            `}</style>
+          </div>
+        )}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <Brain className="text-white" size={20} />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                AI Enhanced Resume & Cover Letter Generator
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Document ID: {documentId.slice(0, 8)}...
+                {applicationData && (
+                  <span className="ml-2">• {applicationData.position} at {applicationData.company_name}</span>
+                )}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-lg text-sm flex items-start gap-3">
+              <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  AI Enhanced Resume & Cover Letter Generator
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Upload your resume and get AI-optimized documents tailored to the job
-                </p>
+                <p className="font-medium">Error</p>
+                <p>{error}</p>
               </div>
             </div>
-            <button
-              onClick={handleClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              <X size={24} />
-            </button>
+          )}
+
+          {/* Job Description - First Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <FileText size={16} className="inline mr-2" />
+              Job Description
+            </label>
+            <textarea
+              value={jobDescription || persistedJobDescription || ''}
+              readOnly
+              rows={6}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+              placeholder="Job description will be used to tailor your resume and cover letter..."
+            />
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              This job description will be analyzed by AI to optimize your resume and cover letter
+            </p>
           </div>
 
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-lg">
-              {error}
-            </div>
-          )}
+          {/* Resume Upload Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+              <Upload size={16} className="inline mr-2" />
+              Upload Your Current Resume
+            </label>
 
-          {!showResults ? (
-            <div className="space-y-6">
-              {/* Job Description */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Job Description
-                </label>
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-                    {jobDescription}
+            {/* Local File Upload */}
+            <div 
+              className={`border-2 border-dashed rounded-lg p-6 mb-4 transition-colors ${
+                isDragOver 
+                  ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' 
+                  : 'border-gray-300 dark:border-gray-600'
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <div className="text-center">
+                <HardDrive className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <div className="flex flex-col items-center">
+                  <label className="cursor-pointer">
+                    <span className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                      Browse Local Files
+                    </span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.txt"
+                      onChange={handleFileSelect}
+                      key={selectedFileMeta ? selectedFileMeta.name + selectedFileMeta.lastModified : 'empty'}
+                    />
+                  </label>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    {isDragOver ? 'Drop your PDF here' : 'Only PDF or Text files (max 10MB) or drag & drop'}
                   </p>
-                </div>
-              </div>
-
-              {/* File Upload */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Upload Resume (PDF)
-                </label>
-                <div
-                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-all ${
-                    isDragOver
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : selectedFileMeta
-                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-                  }`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileSelection(file);
-                    }}
-                    className="hidden"
-                  />
-                  
-                  {selectedFileMeta ? (
-                    <div className="space-y-2">
-                      <FileText className="h-12 w-12 text-green-500 mx-auto" />
-                      <p className="text-green-700 dark:text-green-400 font-medium">
-                        {selectedFileMeta.name}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {(selectedFileMeta.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Upload className="h-12 w-12 text-gray-400 mx-auto" />
-                      <p className="text-gray-600 dark:text-gray-400">
-                        Drag & drop your resume PDF here, or{' '}
-                        <button
-                          onClick={() => fileInputRef.current?.click()}
-                          className="text-blue-600 hover:text-blue-700 font-medium"
-                        >
-                          browse files
-                        </button>
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        PDF files only, max 10MB
+                  {selectedFileMeta && (
+                    <div className="mt-3 p-2 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center gap-2">
+                      <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
+                      <p className="text-sm text-green-700 dark:text-green-400">
+                        Selected: {selectedFileMeta.name}
                       </p>
                     </div>
                   )}
                 </div>
               </div>
-
-              {/* Generate Button */}
-              <div className="flex justify-end">
-                <button
-                  onClick={generateOptimizedDocuments}
-                  disabled={!selectedFileMeta || !jobDescription || isProcessing}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-8 py-3 rounded-lg font-medium transition-all disabled:cursor-not-allowed flex items-center space-x-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>Generating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 size={20} />
-                      <span>Generate using AI</span>
-                    </>
-                  )}
-                </button>
-              </div>
             </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Document Tabs */}
-              <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
-                <button
-                  onClick={() => handleTabChange('resume')}
-                  className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
-                    activeTab === 'resume'
-                      ? 'bg-white dark:bg-gray-800 text-blue-600 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                  }`}
-                >
-                  <FileText className="inline h-4 w-4 mr-2" />
-                  Resume
-                </button>
-                <button
-                  onClick={() => handleTabChange('coverLetter')}
-                  className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
-                    activeTab === 'coverLetter'
-                      ? 'bg-white dark:bg-gray-800 text-blue-600 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                  }`}
-                >
-                  <Edit3 className="inline h-4 w-4 mr-2" />
-                  Cover Letter
-                </button>
-              </div>
+          </div>
 
-              {/* Document Editor */}
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {activeTab === 'resume' ? 'Optimized Resume' : 'Cover Letter'}
-                  </h3>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={downloadAsPDF}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
-                    >
-                      <Download size={16} />
-                      <span>Download PDF</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Editable Content */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 min-h-[500px] border">
-                  <div
-                    contentEditable
-                    className="prose max-w-none focus:outline-none"
-                    dangerouslySetInnerHTML={{ __html: editableContent }}
-                    onBlur={(e) => setEditableContent(e.currentTarget.innerHTML)}
-                    style={{
-                      minHeight: '500px',
-                      lineHeight: '1.6',
-                      fontSize: '14px',
-                      color: 'inherit'
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-between">
-                <button
-                  onClick={() => dispatch(setShowResults(false))}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Back to Upload
-                </button>
-                <button
-                  onClick={handleClose}
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Generate Button */}
+          <div className="flex gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={handleGenerateAI}
+              disabled={loading || (!selectedFileMeta && !cloudFileUrl) || !(jobDescription || persistedJobDescription || '').trim() || !config.hasApiKey}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-all disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  {extractionProgress || 'Processing...'}
+                </>
+              ) : (
+                <>
+                  <Brain size={20} />
+                  Generate using AI - Resume & Cover Letter
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </div>
