@@ -299,3 +299,6 @@ export class AIEnhancementService {
         return this.enhanceWithJson(resumeJson, jobDescription, options);
     }
 }
+
+// Export the optimizeResumeWithAI function for backward compatibility
+export const optimizeResumeWithAI = AIEnhancementService.optimizeResumeWithAI.bind(AIEnhancementService);
