@@ -559,7 +559,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            disabled={loading || (!selectedFileMeta && !cloudFileUrl) || !(jobDescription || persistedJobDescription || '').trim() || !extractedText}
+            disabled={loading || (!selectedFileMeta && !cloudFileUrl) || !(jobDescription || persistedJobDescription || '').trim() || !extractedText}>
             <X size={24} />
           </button>
         </div>
@@ -698,6 +698,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
               onClick={onClose}
               className="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
             >
+              Cancel
             >
               <X size={24} />
             </button>
