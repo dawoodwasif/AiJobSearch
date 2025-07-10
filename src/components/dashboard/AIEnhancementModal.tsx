@@ -166,13 +166,22 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
   };
 
   const handleGenerateAI = async () => {
+    // Get the current job description from props or Redux store
+    const currentJobDescription = jobDescription || persistedJobDescription || '';
+    
+    // Validate required inputs
     if (!selectedFileMeta && !cloudFileUrl) {
       dispatch(setError('Please select a resume file or provide a cloud file URL'));
       return;
     }
 
-    if (!jobDescription.trim()) {
+    if (!currentJobDescription.trim()) {
       dispatch(setError('Job description is required for AI enhancement'));
+      return;
+    }
+
+    if (!extractedText || extractedText.trim().length === 0) {
+      dispatch(setError('No text extracted from resume file. Please try uploading the file again.'));
       return;
     }
 
@@ -183,11 +192,6 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
       return;
     }
 
-    if (!extractedText) {
-      dispatch(setError('No text extracted from file. Please try uploading the file again.'));
-      return;
-    }
-
     // Check API configuration
     if (!config.hasApiKey) {
       dispatch(setError('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your environment variables.'));
@@ -195,7 +199,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
     }
 
     // Validate enhancement request
-    const validation = AIEnhancementService.validateEnhancementRequest(jobDescription);
+    const validation = AIEnhancementService.validateEnhancementRequest(currentJobDescription);
     if (!validation.isValid) {
       dispatch(setError(validation.error || 'Invalid request'));
       return;
@@ -208,7 +212,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
     try {
       const generated = await generateResumeAndCoverLetter(
         extractedText,
-        jobDescription,
+        currentJobDescription,
         apiKey
       );
 
@@ -220,7 +224,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
         resume: generated.resume,
         coverLetter: generated.coverLetter,
         originalText: extractedText,
-        jobDescription: jobDescription
+        jobDescription: currentJobDescription
       }));
       
       dispatch(setShowResults(true));
@@ -292,7 +296,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
         // Try using the JSON mode first (more reliable)
         enhancementResult = await AIEnhancementService.enhanceWithJson(
           extractionResult.resume_json,
-          jobDescription,
+          currentJobDescription,
           {
             modelType: config.defaultModelType,
             model: config.defaultModel,
@@ -304,7 +308,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
         setExtractionProgress('Retrying analysis with file upload...');
         enhancementResult = await AIEnhancementService.enhanceWithFile(
           fileToProcess,
-          jobDescription,
+          currentJobDescription,
           {
             modelType: config.defaultModelType,
             model: config.defaultModel,
@@ -413,7 +417,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
         rawAIResponse: normalizedResult,
 
         // Add job context for PDF generation
-        jobDescription: jobDescription,
+        jobDescription: currentJobDescription,
         applicationData: applicationData,
 
         // Add detailed user profile and user for cover letter generation
@@ -555,7 +559,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          >
+            disabled={loading || (!selectedFileMeta && !cloudFileUrl) || !(jobDescription || persistedJobDescription || '').trim() || !extractedText}
             <X size={24} />
           </button>
         </div>
