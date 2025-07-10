@@ -289,4 +289,13 @@ export class AIEnhancementService {
             throw new Error('Failed to process AI enhancement response');
         }
     }
+
+    // Optimize resume with AI (alias for enhanceWithJson for backward compatibility)
+    static async optimizeResumeWithAI(
+        resumeJson: any,
+        jobDescription: string,
+        options: AIEnhancementOptions = {}
+    ): Promise<AIEnhancementResponse> {
+        return this.enhanceWithJson(resumeJson, jobDescription, options);
+    }
 }
