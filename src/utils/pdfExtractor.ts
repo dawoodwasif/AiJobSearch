@@ -193,15 +193,6 @@ async function extractTextWithFileReader(file: File): Promise<string> {
 }
 
 /**
- * Extracts text from a Word document file using mammoth
- * @param file The Word document file to extract text from
- * @returns A promise that resolves to the extracted text
- */
-export async function extractTextFromWord(file: File): Promise<string> {
-  return await extractTextFromDOCX(file);
-}
-
-/**
  * Main function to extract text from a file with multiple fallback methods
  * @param file The file to extract text from
  * @returns A promise that resolves to the extracted text

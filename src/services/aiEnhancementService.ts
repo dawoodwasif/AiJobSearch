@@ -201,16 +201,6 @@ export class AIEnhancementService {
         }
     }
 
-    // Legacy method for backward compatibility
-    static async optimizeResumeWithAI(
-        file: File,
-        jobDescription: string,
-        options: AIEnhancementOptions = {}
-    ): Promise<AIEnhancementResponse> {
-        // This is an alias for enhanceWithFile to maintain backward compatibility
-        return this.enhanceWithFile(file, jobDescription, options);
-    }
-
     // Get current configuration for debugging
     static getConfiguration() {
         return {
@@ -300,6 +290,3 @@ export class AIEnhancementService {
         }
     }
 }
-
-// Export the static method as a standalone function for backward compatibility
-export const optimizeResumeWithAI = AIEnhancementService.optimizeResumeWithAI.bind(AIEnhancementService);
