@@ -153,3 +153,18 @@ const extractPositionFromJobDescription = (jobDescription: string): string => {
   }
   return 'Position Title';
 };
+
+// Export a service class that wraps all the functions
+export class AIGenerationService {
+  static async extractResumeText(file: File): Promise<string> {
+    return extractResumeText(file);
+  }
+
+  static async generateResumeContent(request: GenerateResumeRequest): Promise<Partial<ResumeData>> {
+    return generateResumeContent(request);
+  }
+
+  static async generateCoverLetter(request: GenerateCoverLetterRequest): Promise<CoverLetterData> {
+    return generateCoverLetter(request);
+  }
+}
