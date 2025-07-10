@@ -4,6 +4,7 @@ import applicationModalReducer from './applicationModalSlice';
 import dashboardReducer from './dashboardSlice';
 import resumeTemplateFormReducer from './resumeTemplateFormSlice';
 import aiEnhancementModalReducer from './aiEnhancementModalSlice';
+import resumeBuilderReducer from './resumeBuilderSlice';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 
@@ -12,12 +13,13 @@ const rootReducer = combineReducers({
   dashboard: dashboardReducer,
   resumeTemplateForm: resumeTemplateFormReducer,
   aiEnhancementModal: aiEnhancementModalReducer,
+  resumeBuilder: resumeBuilderReducer,
 });
 
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['applicationModal', 'dashboard', 'resumeTemplateForm', 'aiEnhancementModal']
+  whitelist: ['applicationModal', 'dashboard', 'resumeTemplateForm', 'aiEnhancementModal', 'resumeBuilder']
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

@@ -93,6 +93,27 @@ export default defineConfig({
             console.log('Received Cover Letter Response:', proxyRes.statusCode, req.url);
           });
         },
+      },
+      // Proxy AI generation requests to Supabase Edge Functions in development
+      '/api/ai/generate-resume-content': {
+        target: `${process.env.VITE_SUPABASE_URL || 'http://localhost:54321'}/functions/v1`,
+        changeOrigin: true,
+        rewrite: (path) => '/generate-resume-content',
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('AI resume generation proxy error', err);
+          });
+        },
+      },
+      '/api/ai/generate-cover-letter': {
+        target: `${process.env.VITE_SUPABASE_URL || 'http://localhost:54321'}/functions/v1`,
+        changeOrigin: true,
+        rewrite: (path) => '/generate-cover-letter',
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('AI cover letter generation proxy error', err);
+          });
+        },
       }
     }
   }

@@ -16,6 +16,7 @@ import PublicRoute from './components/auth/PublicRoute';
 import JobSearchPage from './components/pages/JobSearchPage';
 import JobListingsPage from './components/pages/JobListingsPage';
 import AIInterviewPage from './components/pages/AIInterviewPage';
+import ResumeBuilderPage from './components/pages/ResumeBuilderPage';
 import Dashboard from './components/dashboard/DashboardMainNew';
 import ErrorBoundary from './components/dashboard/ErrorBoundary';
 import { ToastProvider } from './components/ui/ToastProvider';
@@ -71,6 +72,11 @@ function App() {
             <Route path="/ai-interview" element={
               <ProtectedRoute>
                 <AIInterviewPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/resume-builder" element={
+              <ProtectedRoute>
+                <ResumeBuilderPage />
               </ProtectedRoute>
             } />
             <Route
