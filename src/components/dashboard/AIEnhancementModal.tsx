@@ -534,6 +534,23 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
           </div>
         )}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        {/* Debug Box for Extracted Text */}
+        {extractedText && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Extracted Text (Debug)
+            </label>
+            <div className="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-4 max-h-60 overflow-y-auto">
+              <pre className="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-mono">
+                {extractedText}
+              </pre>
+            </div>
+            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Character count: {extractedText.length}
+            </div>
+          </div>
+        )}
+
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
               <Brain className="text-white" size={20} />
