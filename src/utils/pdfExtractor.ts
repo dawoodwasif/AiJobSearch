@@ -241,3 +241,26 @@ export function isValidExtractedText(text: string): boolean {
   // Text should be at least 50 characters to be considered valid
   return text && text.length > 50;
 }
+
+/**
+ * Extracts text from a Word document (.doc or .docx)
+ * @param file The Word document file to extract text from
+ * @returns A promise that resolves to the extracted text
+ */
+export async function extractTextFromWord(file: File): Promise<string> {
+  const fileName = file.name.toLowerCase();
+  
+  if (fileName.endsWith('.docx')) {
+    return await extractTextFromDOCX(file);
+  } else if (fileName.endsWith('.doc')) {
+    // For .doc files, try mammoth first, then fallback to FileReader
+    try {
+      return await extractTextFromDOCX(file);
+    } catch (error) {
+      console.warn("Mammoth extraction failed for .doc file, trying FileReader:", error);
+      return await extractTextWithFileReader(file);
+    }
+  } else {
+    throw new Error("Unsupported Word document format. Please use .doc or .docx files.");
+  }
+}
