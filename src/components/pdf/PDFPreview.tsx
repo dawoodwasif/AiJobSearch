@@ -269,6 +269,38 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({
                     )}
                 </div>
                 <div className="flex items-center gap-2">
+                    {/* Download Menu */}
+                    <div className="relative">
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                            className="flex items-center gap-1"
+                        >
+                            <Download size={14} />
+                            Download
+                            <ChevronDown size={12} />
+                        </Button>
+                        {showDownloadMenu && (
+                            <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                                <button
+                                    onClick={handleDownloadPDF}
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                                >
+                                    <Download size={12} />
+                                    PDF
+                                </button>
+                                <button
+                                    onClick={handleDownloadDOCX}
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                                >
+                                    <Download size={12} />
+                                    DOCX
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
                     {/* View PDF Toggle Button */}
                     <Button
                         size="sm"
