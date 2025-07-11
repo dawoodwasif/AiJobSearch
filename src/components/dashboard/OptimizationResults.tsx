@@ -1,10 +1,14 @@
 import React from 'react';
-import { X, Download, FileText, CheckCircle, AlertCircle, Target, TrendingUp, Award, Brain, Settings } from 'lucide-react';
+import { X, Download, FileText, CheckCircle, AlertCircle, Target, TrendingUp, Award, Brain, Settings, Eye } from 'lucide-react';
 import ResumeTemplateForm from './ResumeTemplateForm';
 import { PDFGenerationService } from '../../services/pdfGenerationService';
 import { UserProfileData, ProfileService } from '../../services/profileService';
 import { User } from '@supabase/supabase-js';
 import { useAuth } from '../../hooks/useAuth';
+import { PDFPreview } from '../pdf/PDFPreview';
+import { ResumePDFDocument } from '../pdf/ResumePDFDocument';
+import { CoverLetterPDFDocument } from '../pdf/CoverLetterPDFDocument';
+import { Button } from '../ui/button';
 
 interface OptimizationResultsProps {
   results: {
@@ -77,8 +81,10 @@ const OptimizationResults: React.FC<OptimizationResultsProps> = ({ results, onCl
   const [downloadError, setDownloadError] = React.useState('');
   const [selectedTemplate, setSelectedTemplate] = React.useState('Simple');
   const [currentUserProfile, setCurrentUserProfile] = React.useState<UserProfileData | null>(null);
+  const [showPDFPreview, setShowPDFPreview] = React.useState(false);
+  const [previewType, setPreviewType] = React.useState<'resume' | 'cover-letter'>('resume');
 
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth(); // Add userProfile from useAuth
 
   // Load fresh profile data when component mounts
   React.useEffect(() => {
@@ -86,12 +92,11 @@ const OptimizationResults: React.FC<OptimizationResultsProps> = ({ results, onCl
       if (user) {
         try {
           const freshProfile = await ProfileService.getUserProfile(user.uid);
-          
+
           // Map the Supabase Profile fields to UserProfileData structure
           if (freshProfile) {
             const mappedProfile: UserProfileData = {
               fullName: freshProfile.full_name || '',
-              email: freshProfile.email || '',
               contactNumber: freshProfile.phone || '',
               streetAddress: freshProfile.location || '', // Use location as street address
               city: '',  // Not directly available in Profile
@@ -280,6 +285,127 @@ const OptimizationResults: React.FC<OptimizationResultsProps> = ({ results, onCl
     onClose();
   };
 
+  // Convert results to PDF document format
+  const resumePDFData = React.useMemo(() => {
+    if (!results.parsedResume) return null;
+
+    // Use actual user data from the correct sources
+    const userName = currentUserProfile?.fullName ||
+      results.parsedResume?.personal?.name ||
+      userProfile?.full_name ||
+      user?.displayName ||
+      user?.email?.split('@')[0] ||
+      'User';
+
+    const userEmail = user?.email ||
+      userProfile?.email ||
+      results.parsedResume?.personal?.email ||
+      'user@email.com';
+
+    const userPhone = currentUserProfile?.contactNumber ||
+      userProfile?.phone ||
+      results.parsedResume?.personal?.phone ||
+      '+1 (555) 123-4567';
+
+    return {
+      personal: {
+        name: userName,
+        email: userEmail,
+        phone: userPhone,
+        location: currentUserProfile?.streetAddress ||
+          userProfile?.location ||
+          results.parsedResume?.personal?.location ||
+          'Location',
+        linkedin: currentUserProfile?.linkedin_url ||
+          userProfile?.linkedin_url ||
+          results.parsedResume?.personal?.linkedin,
+        website: results.parsedResume?.personal?.website,
+      },
+      summary: results.aiEnhancements?.enhancedSummary ||
+        `Experienced professional optimized for the ${results.applicationData?.position} role at ${results.applicationData?.company_name}.`,
+      experience: results.experienceOptimization?.filter(exp => exp.included).map(exp => ({
+        company: exp.company,
+        position: exp.position,
+        startDate: '2020',
+        endDate: 'Present',
+        location: 'Location',
+        responsibilities: [
+          `Enhanced responsibilities and achievements tailored for ${results.applicationData?.position} role`,
+          'Optimized keyword alignment with job requirements',
+          exp.reasoning || 'Key contribution to company success'
+        ]
+      })) || [],
+      skills: {
+        technical: results.skillsOptimization?.technicalSkills || [],
+        soft: results.skillsOptimization?.softSkills || []
+      },
+      education: [{
+        institution: 'University Name',
+        degree: 'Bachelor of Science',
+        field: 'Computer Science',
+        graduationDate: '2020',
+        location: 'University Location'
+      }],
+      projects: []
+    };
+  }, [results, currentUserProfile, userProfile, user]);
+
+  const coverLetterPDFData = React.useMemo(() => {
+    if (!results.applicationData) return null;
+
+    // Use actual user data from the correct sources
+    const userName = currentUserProfile?.fullName ||
+      results.parsedResume?.personal?.name ||
+      userProfile?.full_name ||
+      user?.displayName ||
+      user?.email?.split('@')[0] ||
+      'User';
+
+    const userEmail = user?.email ||
+      userProfile?.email ||
+      results.parsedResume?.personal?.email ||
+      'user@email.com';
+
+    const userPhone = currentUserProfile?.contactNumber ||
+      userProfile?.phone ||
+      results.parsedResume?.personal?.phone ||
+      '+1 (555) 123-4567';
+
+    return {
+      senderInfo: {
+        name: userName,
+        email: userEmail,
+        phone: userPhone,
+        address: currentUserProfile?.streetAddress ||
+          userProfile?.location ||
+          results.parsedResume?.personal?.location ||
+          ''
+      },
+      recipientInfo: {
+        hiringManager: 'Hiring Manager',
+        company: results.applicationData.company_name,
+        position: results.applicationData.position,
+        address: results.applicationData.location || ''
+      },
+      content: {
+        opening: results.aiEnhancements?.coverLetterOutline?.opening ||
+          `I am writing to express my strong interest in the ${results.applicationData.position} position at ${results.applicationData.company_name}.`,
+        body: [
+          results.aiEnhancements?.coverLetterOutline?.body ||
+          'My experience and skills align perfectly with your requirements, and I am excited about the opportunity to contribute to your team.',
+          'I have successfully delivered projects using the exact technologies mentioned in your job posting, and my collaborative approach makes me an ideal candidate for your dynamic environment.'
+        ],
+        closing: results.aiEnhancements?.coverLetterOutline?.closing ||
+          'Thank you for considering my application. I look forward to discussing how my skills and enthusiasm can benefit your team.'
+      },
+      date: new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    };
+  }, [results, currentUserProfile, userProfile, user]);
+
   if (showTemplateForm) {
     return (
       <ResumeTemplateForm
@@ -382,6 +508,67 @@ const OptimizationResults: React.FC<OptimizationResultsProps> = ({ results, onCl
               Your optimized resume and cover letter have been generated and are ready for download.
             </p>
 
+            {/* PDF Document Previews */}
+            <div className="mb-6 space-y-4">
+              {/* Resume PDF Preview */}
+              {resumePDFData && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-4 py-3 border-b border-gray-200 dark:border-gray-600 flex items-center justify-between">
+                    <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <FileText className="text-blue-600 dark:text-blue-400" size={20} />
+                      AI-Enhanced Resume (PDF)
+                    </h4>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleDownloadOptimizedResume}
+                        disabled={downloadingResume}
+                      >
+                        <Download size={16} className="mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <PDFPreview
+                      pdfDocument={<ResumePDFDocument resumeData={resumePDFData} />}
+                      title="AI-Enhanced Resume"
+                      width={400}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Cover Letter PDF Preview */}
+              {coverLetterPDFData && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 px-4 py-3 border-b border-gray-200 dark:border-gray-600 flex items-center justify-between">
+                    <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <FileText className="text-purple-600 dark:text-purple-400" size={20} />
+                      AI-Generated Cover Letter (PDF)
+                    </h4>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleDownloadCoverLetter}
+                        disabled={downloadingCoverLetter}
+                      >
+                        <Download size={16} className="mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <PDFPreview
+                      pdfDocument={<CoverLetterPDFDocument coverLetterData={coverLetterPDFData} />}
+                      title="AI-Generated Cover Letter"
+                      width={400}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {downloadError && (
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                 <p className="text-sm text-red-700 dark:text-red-300">
@@ -468,8 +655,8 @@ const OptimizationResults: React.FC<OptimizationResultsProps> = ({ results, onCl
                   <div
                     key={index}
                     className={`p-4 rounded-lg border-l-4 ${exp.included
-                        ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
-                        : 'bg-red-50 dark:bg-red-900/20 border-red-500'
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                      : 'bg-red-50 dark:bg-red-900/20 border-red-500'
                       }`}
                   >
                     <div className="flex justify-between items-start mb-2">
@@ -477,8 +664,8 @@ const OptimizationResults: React.FC<OptimizationResultsProps> = ({ results, onCl
                         {exp.included ? '✅' : '❌'} {exp.company} - {exp.position}
                       </span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${exp.relevanceScore >= 70
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                         }`}>
                         {exp.relevanceScore}% relevance
                       </span>

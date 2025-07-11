@@ -34,7 +34,7 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
   const { user } = useAuth();
   const { showError } = useToastContext();
   const [jobPreferences, setJobPreferences] = useState<JobPreferences | null>(null);
-  
+
   const [applyForm, setApplyForm] = useState<ApplyJobsForm>({
     targetRole: '',
     experienceLevel: '',
@@ -172,12 +172,12 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
             <X size={24} />
           </button>
         </div>
-        
+
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">          {/* Profile Summary */}
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
             <h3 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">Your Profile</h3>
             <p className="text-blue-800 dark:text-blue-300 text-sm">
-              <strong>Name:</strong> {userProfile?.full_name || 'Not set'} | 
+              <strong>Name:</strong> {userProfile?.full_name || 'Not set'} |
               <strong> Email:</strong> {userProfile?.email || 'Not set'} |
               <strong> Phone:</strong> {userProfile?.phone || 'Not set'}
             </p>
@@ -200,7 +200,7 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
                   Apply to Form
                 </button>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 {(jobPreferences.preferred_job_titles || []).filter((title: string) => title.trim()).length > 0 && (
                   <div>
@@ -246,7 +246,7 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Experience Level
@@ -263,7 +263,7 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
                 <option value="executive">Executive (10+ years)</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Preferred Location
@@ -276,7 +276,7 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
                 placeholder="e.g. New York, San Francisco, Remote"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Salary Expectation
@@ -289,7 +289,7 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
                 placeholder="e.g. $80,000 - $120,000, Negotiable"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Employment Type
@@ -306,7 +306,7 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
                 <option value="INTERN">Internship</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Resume Version
@@ -322,7 +322,7 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
                 <option value="creative">Creative Resume</option>
               </select>
             </div>
-            
+
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Key Skills & Keywords
@@ -335,7 +335,7 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
                 placeholder="e.g. React, Python, Project Management, Agile"
               />
             </div>
-            
+
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Target Industries
@@ -348,7 +348,7 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
                 placeholder="e.g. Technology, Healthcare, Finance, Startups"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Cover Letter Template
@@ -364,7 +364,7 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
                 <option value="executive">Executive Template</option>
               </select>
             </div>
-            
+
             <div className="flex items-center">
               <label className="flex items-center">
                 <input
@@ -379,7 +379,7 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
               </label>
             </div>
           </div>
-          
+
           {/* Action Buttons */}
           <div className="flex gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
@@ -399,14 +399,14 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
                 </>
               )}
             </button>
-            
+
             <button
               onClick={handleClear}
               className="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
             >
               Clear Form
             </button>
-            
+
             <button
               onClick={onClose}
               className="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
@@ -414,7 +414,7 @@ const ApplyJobsModal: React.FC<ApplyJobsModalProps> = ({
               Cancel
             </button>
           </div>
-          
+
           {/* Instructions */}
           <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
             <h4 className="font-medium text-gray-900 dark:text-white mb-2">How it works:</h4>

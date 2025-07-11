@@ -1,4 +1,5 @@
 import * as pdfjsLib from 'pdfjs-dist';
+import { AlertCircle } from 'lucide-react'; // Add this import
 
 // Set up PDF.js worker - try multiple approaches
 const setupWorker = () => {

@@ -3,6 +3,8 @@ import { X, Upload, FileText, Download, Eye, Wand2, Sparkles, Bot, RefreshCw, Al
 import { useToastContext } from '../ui/ToastProvider';
 import OptimizationResults from './OptimizationResults';
 import { extractTextFromPDF, validatePDFFile, PDFExtractionResult, setupPDFWorkerAlternative, testPDFJSAvailability, extractTextFallback, createManualTextInput } from '../../utils/pdfUtils';
+import { OpenAIResumeOptimizer } from '../../services/openaiService';
+import { validateConfig } from '../../utils/config';
 
 interface AIEnhancementModalProps {
     jobDescription: string;
@@ -145,89 +147,89 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
             return;
         }
 
+        // Validate configuration before proceeding
+        const configValidation = validateConfig();
+        if (!configValidation.isValid) {
+            showError('Configuration Error', configValidation.errors.join(' '));
+            return;
+        }
+
         setIsProcessing(true);
         setStep('processing');
 
         try {
-            // Simulate AI enhancement process
-            await new Promise(resolve => setTimeout(resolve, 4000));
+            console.log('Starting AI enhancement with OpenAI...');
 
-            // Mock optimization results with extracted text
+            // Call real OpenAI API
+            const aiResults = await OpenAIResumeOptimizer.optimizeResume({
+                resumeText: extractedPDFData.text,
+                jobDescription: jobDescription,
+                applicantData: {
+                    name: detailedUserProfile?.fullName,
+                    email: detailedUserProfile?.email,
+                    phone: detailedUserProfile?.contactNumber,
+                    location: detailedUserProfile?.streetAddress
+                }
+            });
+
+            console.log('OpenAI optimization completed');
+
+            // Structure results for OptimizationResults component
             const mockResults = {
-                matchScore: Math.floor(Math.random() * 20) + 75, // 75-95%
-                summary: `Your resume has been optimized for the ${applicationData.position} role at ${applicationData.company_name}. The AI has enhanced your content to better match the job requirements and increased keyword relevance based on ${extractedPDFData.text.length} characters of extracted text.`,
-                strengths: [
-                    'Strong technical skills alignment with job requirements',
-                    'Relevant experience in similar roles',
-                    'Good educational background match',
-                    'Comprehensive skill set mentioned in resume'
-                ],
-                gaps: [
-                    'Could benefit from more specific industry keywords',
-                    'Project examples could be more detailed',
-                    'Missing some key technologies from job posting'
-                ],
-                suggestions: [
-                    'Add more quantifiable achievements',
-                    'Include specific technologies mentioned in job posting',
-                    'Enhance leadership examples',
-                    'Align experience descriptions with job requirements'
-                ],
+                matchScore: aiResults.matchScore,
+                summary: aiResults.summary,
+                strengths: aiResults.strengths,
+                gaps: aiResults.gaps,
+                suggestions: aiResults.suggestions,
                 optimizedResumeUrl: '#',
                 optimizedCoverLetterUrl: '#',
-                keywordAnalysis: {
-                    coverageScore: Math.floor(Math.random() * 25) + 65, // 65-90%
-                    coveredKeywords: ['JavaScript', 'React', 'Node.js', 'SQL', 'Git', 'Python'],
-                    missingKeywords: ['Docker', 'AWS', 'Kubernetes', 'TypeScript']
-                },
-                experienceOptimization: [
-                    {
-                        company: 'Previous Company',
-                        position: 'Software Developer',
-                        relevanceScore: 92,
-                        included: true,
-                        reasoning: 'Highly relevant experience with matching tech stack'
-                    },
-                    {
-                        company: 'Another Company',
-                        position: 'Junior Developer',
-                        relevanceScore: 78,
-                        included: true,
-                        reasoning: 'Good foundational experience'
-                    }
-                ],
-                skillsOptimization: {
-                    technicalSkills: ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'MongoDB'],
-                    softSkills: ['Leadership', 'Communication', 'Problem Solving', 'Team Collaboration'],
-                    missingSkills: ['Docker', 'AWS', 'CI/CD']
-                },
+                keywordAnalysis: aiResults.keywordAnalysis,
+                experienceOptimization: aiResults.experienceOptimization,
+                skillsOptimization: aiResults.skillsOptimization,
                 parsedResume: {
                     personal: {
                         name: detailedUserProfile?.fullName || 'John Doe',
                         email: detailedUserProfile?.email || 'john.doe@email.com',
-                        phone: detailedUserProfile?.phone || '+1 (555) 123-4567'
+                        phone: detailedUserProfile?.contactNumber || '+1 (555) 123-4567',
+                        location: detailedUserProfile?.streetAddress
                     }
                 },
                 extractionMetadata: {
                     documentId: `doc-${Date.now()}`,
                     extractedTextLength: extractedPDFData.text.length,
                     processingTime: 4.2,
-                    modelUsed: 'gpt-4',
+                    modelUsed: 'gpt-4o',
+                    apiBaseUrl: 'https://api.openai.com',
                     pdfPages: extractedPDFData.pages,
                     pdfMetadata: extractedPDFData.metadata,
                     sourceMethod: extractedPDFData.metadata?.source || 'pdf_extraction'
                 },
+                aiEnhancements: aiResults.aiEnhancements,
+                rawAIResponse: aiResults,
                 jobDescription,
                 applicationData,
                 detailedUserProfile,
-                extractedText: extractedPDFData.text // Include for debugging
+                extractedText: extractedPDFData.text,
+                optimizedResumeText: aiResults.optimizedResumeText
             };
 
             setOptimizationResults(mockResults);
             setStep('results');
-            showSuccess('Enhancement Complete!', 'Your AI-optimized resume and cover letter are ready for review.');
-        } catch (error) {
-            showError('Enhancement failed', 'Failed to enhance your resume. Please try again.');
+            showSuccess('AI Enhancement Complete!', 'Your resume has been optimized using OpenAI GPT-4.');
+        } catch (error: any) {
+            console.error('AI enhancement failed:', error);
+
+            // Show user-friendly error message
+            if (error.message.includes('API key')) {
+                showError('Configuration Error', 'OpenAI API key is not properly configured. Please contact support or check your environment setup.');
+            } else if (error.message.includes('quota')) {
+                showError('Service Limit Reached', 'The AI service quota has been exceeded. Please try again later or contact support.');
+            } else if (error.message.includes('network')) {
+                showError('Connection Error', 'Unable to connect to AI service. Please check your internet connection and try again.');
+            } else {
+                showError('AI Enhancement Failed', error.message || 'Failed to enhance your resume. Please try again.');
+            }
+
             setStep('upload');
         } finally {
             setIsProcessing(false);

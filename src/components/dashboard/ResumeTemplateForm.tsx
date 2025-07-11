@@ -66,10 +66,10 @@ interface ResumeTemplateFormProps {
   onGenerate: (formData: any) => void;
 }
 
-const ResumeTemplateForm: React.FC<ResumeTemplateFormProps> = ({ 
-  parsedResume, 
-  onClose, 
-  onGenerate 
+const ResumeTemplateForm: React.FC<ResumeTemplateFormProps> = ({
+  parsedResume,
+  onClose,
+  onGenerate
 }) => {
   const dispatch = useAppDispatch();
   const formData = useAppSelector((state) => state.resumeTemplateForm.formData);
@@ -182,20 +182,20 @@ const ResumeTemplateForm: React.FC<ResumeTemplateFormProps> = ({
     dispatch(resetResumeTemplateForm());
   };
 
-  const SectionHeader = ({ 
-    id, 
-    icon, 
-    title, 
-    status, 
-    onAdd 
-  }: { 
-    id: string; 
-    icon: React.ReactNode; 
-    title: string; 
-    status?: 'required' | 'recommended' | 'optional'; 
+  const SectionHeader = ({
+    id,
+    icon,
+    title,
+    status,
+    onAdd
+  }: {
+    id: string;
+    icon: React.ReactNode;
+    title: string;
+    status?: 'required' | 'recommended' | 'optional';
     onAdd?: () => void;
   }) => (
-    <div 
+    <div
       className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
       onClick={() => toggleSection(id)}
     >
@@ -220,13 +220,12 @@ const ResumeTemplateForm: React.FC<ResumeTemplateFormProps> = ({
           </button>
         )}
         {status && (
-          <span className={`px-2 py-1 text-xs font-medium rounded-full uppercase tracking-wide ${
-            status === 'required' 
-              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-              : status === 'recommended'
+          <span className={`px-2 py-1 text-xs font-medium rounded-full uppercase tracking-wide ${status === 'required'
+            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+            : status === 'recommended'
               ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
               : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-          }`}>
+            }`}>
             {status}
           </span>
         )}
@@ -243,13 +242,13 @@ const ResumeTemplateForm: React.FC<ResumeTemplateFormProps> = ({
     </div>
   );
 
-  const FormField = ({ 
-    label, 
-    required = false, 
-    children 
-  }: { 
-    label: string; 
-    required?: boolean; 
+  const FormField = ({
+    label,
+    required = false,
+    children
+  }: {
+    label: string;
+    required?: boolean;
     children: React.ReactNode;
   }) => (
     <div>
@@ -260,16 +259,16 @@ const ResumeTemplateForm: React.FC<ResumeTemplateFormProps> = ({
     </div>
   );
 
-  const Input = ({ 
-    value, 
-    onChange, 
-    placeholder, 
+  const Input = ({
+    value,
+    onChange,
+    placeholder,
     type = 'text',
-    required = false 
-  }: { 
-    value: string; 
-    onChange: (value: string) => void; 
-    placeholder?: string; 
+    required = false
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
     type?: string;
     required?: boolean;
   }) => (
@@ -283,15 +282,15 @@ const ResumeTemplateForm: React.FC<ResumeTemplateFormProps> = ({
     />
   );
 
-  const TextArea = ({ 
-    value, 
-    onChange, 
-    placeholder, 
-    rows = 3 
-  }: { 
-    value: string; 
-    onChange: (value: string) => void; 
-    placeholder?: string; 
+  const TextArea = ({
+    value,
+    onChange,
+    placeholder,
+    rows = 3
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
     rows?: number;
   }) => (
     <textarea
@@ -303,15 +302,15 @@ const ResumeTemplateForm: React.FC<ResumeTemplateFormProps> = ({
     />
   );
 
-  const Select = ({ 
-    value, 
-    onChange, 
-    options, 
-    placeholder 
-  }: { 
-    value: string; 
-    onChange: (value: string) => void; 
-    options: Array<{ value: string; label: string }>; 
+  const Select = ({
+    value,
+    onChange,
+    options,
+    placeholder
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+    options: Array<{ value: string; label: string }>;
     placeholder?: string;
   }) => (
     <select
@@ -682,11 +681,10 @@ const ResumeTemplateForm: React.FC<ResumeTemplateFormProps> = ({
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">📄 Output Format</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
-                      formatChoice === 'html' 
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
-                    }`}>
+                    <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all ${formatChoice === 'html'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                      }`}>
                       <input
                         type="radio"
                         name="format_choice"
@@ -701,11 +699,10 @@ const ResumeTemplateForm: React.FC<ResumeTemplateFormProps> = ({
                         <p className="text-sm text-gray-600 dark:text-gray-400">Professional PDF templates with predefined layouts</p>
                       </div>
                     </label>
-                    <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
-                      formatChoice === 'markdown' 
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
-                    }`}>
+                    <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all ${formatChoice === 'markdown'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                      }`}>
                       <input
                         type="radio"
                         name="format_choice"
@@ -731,11 +728,10 @@ const ResumeTemplateForm: React.FC<ResumeTemplateFormProps> = ({
                       {templates.map((template) => (
                         <label
                           key={template.id}
-                          className={`border rounded-lg overflow-hidden cursor-pointer transition-all hover:shadow-lg ${
-                            selectedTemplate === template.id
-                              ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800'
-                              : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
-                          }`}
+                          className={`border rounded-lg overflow-hidden cursor-pointer transition-all hover:shadow-lg ${selectedTemplate === template.id
+                            ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                            }`}
                         >
                           <div className="h-40 bg-gray-100 dark:bg-gray-600 flex items-center justify-center">
                             <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">

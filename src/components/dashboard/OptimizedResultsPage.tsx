@@ -38,10 +38,10 @@ interface OptimizedResultsPageProps {
   onBackToDashboard: () => void;
 }
 
-const OptimizedResultsPage: React.FC<OptimizedResultsPageProps> = ({ 
-  results, 
-  onClose, 
-  onBackToDashboard 
+const OptimizedResultsPage: React.FC<OptimizedResultsPageProps> = ({
+  results,
+  onClose,
+  onBackToDashboard
 }) => {
   const getScoreBadge = (score: number) => {
     if (score >= 85) {
@@ -80,7 +80,7 @@ const OptimizedResultsPage: React.FC<OptimizedResultsPageProps> = ({
   const handleDownloadOptimizedText = () => {
     const textToDownload = results.optimizedResumeText || results.tweakedText;
     if (!textToDownload) return;
-    
+
     const blob = new Blob([textToDownload], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -331,13 +331,106 @@ const OptimizedResultsPage: React.FC<OptimizedResultsPageProps> = ({
 
           {/* Explanation (if available) */}
           {results.explanation && (
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                📝 Analysis Explanation
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-6 border border-purple-200 dark:border-purple-700">
+              <h4 className="text-lg font-semibold text-purple-800 dark:text-purple-300 mb-4 flex items-center gap-2">
+                🤖 AI Analysis powered by OpenAI GPT-4
               </h4>
-              <p className="text-gray-700 dark:text-gray-300">
+              <p className="text-purple-700 dark:text-purple-300">
                 {results.explanation}
               </p>
+            </div>
+          )}
+
+          {/* Experience Optimization */}
+          {results.experienceOptimization && results.experienceOptimization.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                💼 AI Experience Optimization
+              </h3>
+              <div className="space-y-4">
+                {results.experienceOptimization.map((exp, index) => (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-lg border-l-4 ${exp.included
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                      : 'bg-red-50 dark:bg-red-900/20 border-red-500'
+                      }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {exp.included ? '✅' : '❌'} {exp.company} - {exp.position}
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${exp.relevanceScore >= 70
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                        }`}>
+                        {exp.relevanceScore}% relevance
+                      </span>
+                    </div>
+                    {exp.reasoning && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{exp.reasoning}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Skills Optimization */}
+          {results.skillsOptimization && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                🔧 AI Skills Optimization
+              </h3>
+              <div className="space-y-6">
+                {results.skillsOptimization.technicalSkills.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Technical Skills (AI Selected)</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {results.skillsOptimization.technicalSkills.map((skill, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-full text-sm font-medium"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {results.skillsOptimization.softSkills.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Soft Skills (AI Selected)</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {results.skillsOptimization.softSkills.map((skill, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 rounded-full text-sm font-medium"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {results.skillsOptimization.missingSkills.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">⚠️ Skills to Add (AI Recommendation)</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {results.skillsOptimization.missingSkills.map((skill, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded-full text-sm font-medium"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

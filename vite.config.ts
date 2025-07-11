@@ -4,8 +4,18 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    // Make sure process.env is available in browser for compatibility
+    'process.env': {},
+  },
+  envPrefix: ['VITE_'], // Ensure VITE_ prefixed vars are exposed
   optimizeDeps: {
-    include: ['lucide-react'],
+    include: ['lucide-react', 'react-pdf', 'pdfjs-dist'],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/react-pdf/, /pdfjs-dist/],
+    },
   },
   server: {
     proxy: {
@@ -125,7 +135,7 @@ export default defineConfig({
             console.log('AI cover letter generation proxy error', err);
           });
         },
-      }
-    }
-  }
+      },
+    },
+  },
 });

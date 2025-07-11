@@ -1,241 +1,255 @@
-interface ResumeData {
-  personalInfo: {
-    name: string;
-    email: string;
-    phone: string;
-    location: string;
-    title: string;
-    summary: string;
-  };
-  experience: Array<{
-    company: string;
-    position: string;
-    duration: string;
-    description: string;
-    achievements: string[];
-  }>;
-  education: Array<{
-    institution: string;
-    degree: string;
-    year: string;
-    gpa?: string;
-  }>;
-  skills: {
-    technical: string[];
-    soft: string[];
-    tools: string[];
-  };
-  projects: Array<{
-    name: string;
-    description: string;
-    technologies: string[];
-    url?: string;
-  }>;
-  certifications: string[];
-}
+import OpenAI from 'openai';
 
-interface CoverLetterData {
-  content: string;
-  sections: {
-    opening: string;
-    body: string[];
-    closing: string;
-  };
-}
+// Get API key from environment variables with proper browser compatibility
+const getApiKey = (): string => {
+  // For client-side, we need to use NEXT_PUBLIC_ prefix
+  if (typeof window !== 'undefined') {
+    // Browser environment
+    return import.meta.env?.VITE_OPENAI_API_KEY ||
+      (window as any).__OPENAI_API_KEY__ ||
+      '';
+  } else {
+    // Server environment (if using SSR)
+    return process.env.OPENAI_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
+  }
+};
 
-interface GenerationRequest {
+const openai = new OpenAI({
+  apiKey: getApiKey(),
+  dangerouslyAllowBrowser: true // Only for client-side usage
+});
+
+export interface ResumeOptimizationRequest {
   resumeText: string;
   jobDescription: string;
-  apiKey?: string; // Optional, will use env var if not provided
+  applicantData?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+  };
 }
 
-interface GenerationResponse {
-  resume: ResumeData;
-  coverLetter: CoverLetterData;
+export interface AIOptimizationResults {
+  matchScore: number;
+  summary: string;
+  strengths: string[];
+  gaps: string[];
+  suggestions: string[];
+  keywordAnalysis: {
+    coverageScore: number;
+    coveredKeywords: string[];
+    missingKeywords: string[];
+  };
+  experienceOptimization: {
+    company: string;
+    position: string;
+    relevanceScore: number;
+    included: boolean;
+    reasoning: string;
+  }[];
+  skillsOptimization: {
+    technicalSkills: string[];
+    softSkills: string[];
+    missingSkills: string[];
+  };
+  aiEnhancements: {
+    enhancedSummary: string;
+    enhancedExperienceBullets: string[];
+    coverLetterOutline: {
+      opening: string;
+      body: string;
+      closing: string;
+    };
+    sectionRecommendations: {
+      skills: string;
+      experience: string;
+      education: string;
+    };
+  };
+  optimizedResumeText: string;
 }
 
-class OpenAIService {
-  private apiKey: string;
-  private baseURL = 'https://api.openai.com/v1';
+export class OpenAIResumeOptimizer {
+  private static createSystemPrompt(): string {
+    return `You are an expert resume optimization AI assistant specializing in ATS optimization and job matching. Your task is to analyze a resume against a job description and provide comprehensive optimization recommendations.
 
-  constructor(apiKey?: string) {
-    // Use provided API key or fall back to environment variable
-    this.apiKey = apiKey || import.meta.env.VITE_OPENAI_API_KEY || '';
-    
-    if (!this.apiKey) {
-      throw new Error('OpenAI API key is required. Please set VITE_OPENAI_API_KEY in your environment variables or provide it directly.');
-    }
-  }
-
-  private async makeRequest(endpoint: string, data: any) {
-    const response = await fetch(`${this.baseURL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`OpenAI API error: ${response.status} - ${errorData.error?.message || response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async generateResumeAndCoverLetter({ resumeText, jobDescription, apiKey }: GenerationRequest): Promise<GenerationResponse> {
-    // Update API key if provided
-    if (apiKey) {
-      this.apiKey = apiKey;
-    }
-
-    try {
-      console.log('Generating resume and cover letter with OpenAI...');
-      
-      // Generate resume
-      const resumeResponse = await this.makeRequest('/chat/completions', {
-        model: 'gpt-4',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a professional resume writer. Analyze the provided resume text and job description to create an optimized, ATS-friendly resume. Return ONLY a valid JSON object with the specified structure. Do not include any markdown formatting or additional text.
-
-The JSON structure should be:
+You must respond with a valid JSON object containing the following structure:
 {
-  "personalInfo": {
-    "name": "string",
-    "email": "string", 
-    "phone": "string",
-    "location": "string",
-    "title": "string",
-    "summary": "string"
+  "matchScore": number (0-100),
+  "summary": "string - overall assessment",
+  "strengths": ["array of strengths"],
+  "gaps": ["array of gaps/weaknesses"],
+  "suggestions": ["array of specific improvement suggestions"],
+  "keywordAnalysis": {
+    "coverageScore": number (0-100),
+    "coveredKeywords": ["keywords found in resume"],
+    "missingKeywords": ["important keywords missing from resume"]
   },
-  "experience": [
+  "experienceOptimization": [
     {
       "company": "string",
       "position": "string", 
-      "duration": "string",
-      "description": "string",
-      "achievements": ["string"]
+      "relevanceScore": number (0-100),
+      "included": boolean,
+      "reasoning": "string"
     }
   ],
-  "education": [
-    {
-      "institution": "string",
-      "degree": "string",
-      "year": "string",
-      "gpa": "string (optional)"
-    }
-  ],
-  "skills": {
-    "technical": ["string"],
-    "soft": ["string"], 
-    "tools": ["string"]
+  "skillsOptimization": {
+    "technicalSkills": ["prioritized technical skills"],
+    "softSkills": ["prioritized soft skills"],
+    "missingSkills": ["skills to add"]
   },
-  "projects": [
-    {
-      "name": "string",
-      "description": "string",
-      "technologies": ["string"],
-      "url": "string (optional)"
+  "aiEnhancements": {
+    "enhancedSummary": "AI-improved professional summary",
+    "enhancedExperienceBullets": ["improved bullet points"],
+    "coverLetterOutline": {
+      "opening": "cover letter opening paragraph",
+      "body": "cover letter body content",
+      "closing": "cover letter closing paragraph"
+    },
+    "sectionRecommendations": {
+      "skills": "recommendations for skills section",
+      "experience": "recommendations for experience section", 
+      "education": "recommendations for education section"
     }
-  ],
-  "certifications": ["string"]
-}`
-          },
-          {
-            role: 'user',
-            content: `Resume Text: ${resumeText}\n\nJob Description: ${jobDescription}\n\nPlease optimize this resume for the job description, highlighting relevant skills and experience. Ensure all information is accurate and based on the original resume content.`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      });
+  },
+  "optimizedResumeText": "complete optimized resume text"
+}
 
-      // Generate cover letter
-      const coverLetterResponse = await this.makeRequest('/chat/completions', {
-        model: 'gpt-4',
+Focus on:
+1. ATS optimization and keyword matching
+2. Quantifiable achievements and metrics
+3. Industry-specific terminology
+4. Proper formatting and structure
+5. Tailoring content to specific job requirements`;
+  }
+
+  private static createUserPrompt(resumeText: string, jobDescription: string): string {
+    return `Please analyze and optimize this resume for the given job description.
+
+JOB DESCRIPTION:
+${jobDescription}
+
+CURRENT RESUME:
+${resumeText}
+
+Provide a comprehensive analysis and optimization following the JSON structure specified in the system prompt. Make sure all recommendations are specific, actionable, and tailored to this exact job posting.`;
+  }
+
+  static async optimizeResume(request: ResumeOptimizationRequest): Promise<AIOptimizationResults> {
+    try {
+      // Check if API key is available
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        throw new Error('OpenAI API key is not configured. Please add your API key to the environment variables.');
+      }
+
+      console.log('Starting OpenAI resume optimization...');
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
-            content: `You are a professional cover letter writer. Create a compelling cover letter based on the resume and job description. Return ONLY a valid JSON object with this structure:
-
-{
-  "content": "Full cover letter content as a single string with proper paragraph breaks using \\n\\n",
-  "sections": {
-    "opening": "Opening paragraph",
-    "body": ["Body paragraph 1", "Body paragraph 2", "Body paragraph 3"],
-    "closing": "Closing paragraph"
-  }
-}
-
-The cover letter should be professional, engaging, and specifically tailored to the job description. Include specific examples from the resume that demonstrate relevant skills and experience.`
+            content: this.createSystemPrompt()
           },
           {
             role: 'user',
-            content: `Resume Text: ${resumeText}\n\nJob Description: ${jobDescription}\n\nPlease create a compelling cover letter that highlights how the candidate's experience aligns with the job requirements.`
+            content: this.createUserPrompt(request.resumeText, request.jobDescription)
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 4000,
+        response_format: { type: 'json_object' }
+      });
+
+      const responseText = completion.choices[0]?.message?.content;
+      if (!responseText) {
+        throw new Error('No response from OpenAI');
+      }
+
+      console.log('OpenAI response received, parsing...');
+      const aiResults = JSON.parse(responseText) as AIOptimizationResults;
+
+      // Validate required fields
+      if (typeof aiResults.matchScore !== 'number' || !aiResults.summary) {
+        throw new Error('Invalid response structure from OpenAI');
+      }
+
+      console.log('OpenAI optimization completed successfully');
+      return aiResults;
+
+    } catch (error) {
+      console.error('OpenAI optimization failed:', error);
+
+      if (error instanceof Error) {
+        if (error.message.includes('API key') || error.message.includes('401')) {
+          throw new Error('OpenAI API key is missing or invalid. Please check your configuration.');
+        } else if (error.message.includes('quota') || error.message.includes('429')) {
+          throw new Error('OpenAI API quota exceeded. Please check your usage limits.');
+        } else if (error.message.includes('JSON')) {
+          throw new Error('Failed to parse AI response. Please try again.');
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          throw new Error('Network error. Please check your internet connection and try again.');
+        }
+      }
+
+      throw new Error(`AI optimization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  static async generateCoverLetter(
+    resumeText: string,
+    jobDescription: string,
+    applicantData: ResumeOptimizationRequest['applicantData']
+  ): Promise<string> {
+    try {
+      // Check if API key is available
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        throw new Error('OpenAI API key is not configured. Please add your API key to the environment variables.');
+      }
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert cover letter writer. Create a professional, compelling cover letter that highlights the candidate's relevant experience and aligns with the job requirements. The cover letter should be engaging, specific, and demonstrate clear value proposition.`
+          },
+          {
+            role: 'user',
+            content: `Create a professional cover letter for this job application.
+
+APPLICANT INFO:
+Name: ${applicantData?.name || 'Applicant'}
+Email: ${applicantData?.email || ''}
+Phone: ${applicantData?.phone || ''}
+Location: ${applicantData?.location || ''}
+
+JOB DESCRIPTION:
+${jobDescription}
+
+RESUME CONTENT:
+${resumeText}
+
+Generate a compelling cover letter that:
+1. Demonstrates clear alignment with job requirements
+2. Highlights relevant achievements with metrics
+3. Shows enthusiasm for the role and company
+4. Maintains professional tone
+5. Is concise yet comprehensive (3-4 paragraphs)`
           }
         ],
         temperature: 0.8,
-        max_tokens: 1500,
+        max_tokens: 1000
       });
 
-      // Parse responses
-      const resumeContent = resumeResponse.choices[0].message.content;
-      const coverLetterContent = coverLetterResponse.choices[0].message.content;
-
-      let resume: ResumeData;
-      let coverLetter: CoverLetterData;
-
-      try {
-        resume = JSON.parse(resumeContent);
-      } catch (error) {
-        console.error('Failed to parse resume JSON:', resumeContent);
-        throw new Error('Failed to parse generated resume data');
-      }
-
-      try {
-        coverLetter = JSON.parse(coverLetterContent);
-      } catch (error) {
-        console.error('Failed to parse cover letter JSON:', coverLetterContent);
-        throw new Error('Failed to parse generated cover letter data');
-      }
-
-      console.log('Successfully generated resume and cover letter');
-      return { resume, coverLetter };
-
+      return completion.choices[0]?.message?.content || 'Failed to generate cover letter';
     } catch (error) {
-      console.error('OpenAI generation error:', error);
-      throw error;
-    }
-  }
-
-  // Test API key validity
-  async testApiKey(): Promise<boolean> {
-    try {
-      await this.makeRequest('/chat/completions', {
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: 'Hello' }],
-        max_tokens: 5,
-      });
-      return true;
-    } catch (error) {
-      console.error('API key test failed:', error);
-      return false;
+      console.error('Cover letter generation failed:', error);
+      throw new Error('Failed to generate cover letter using AI');
     }
   }
 }
-
-export default OpenAIService;
-
-// Export a singleton instance
-export const openaiService = new OpenAIService();
-
-// Export the class for custom instances
-export { OpenAIService };
-// Export the generateResumeAndCoverLetter function for direct use
-export const generateResumeAndCoverLetter = async (request: GenerationRequest): Promise<GenerationResponse> => {
-  return openaiService.generateResumeAndCoverLetter(request);
-};

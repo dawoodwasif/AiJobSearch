@@ -14,10 +14,18 @@ import './index.css';
 import { EnvironmentValidator } from './utils/environmentValidator';
 import { supabase } from './lib/supabase';
 
+// Import PDF worker setup early
+import './utils/pdfWorkerSetup';
+
 // Expose supabase to window for debugging in development
 if (import.meta.env.DEV) {
   (window as any).supabase = supabase;
   console.log('🔧 Supabase client exposed to window.supabase for debugging');
+}
+
+// For development, you can inject the API key directly (not recommended for production)
+if (import.meta.env.DEV && import.meta.env.VITE_OPENAI_API_KEY) {
+  (window as any).__OPENAI_API_KEY__ = import.meta.env.VITE_OPENAI_API_KEY;
 }
 
 // Validate and log environment status

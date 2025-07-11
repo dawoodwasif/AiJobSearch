@@ -48,12 +48,12 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
       setError('');
-      
+
       const [applicationsData, statsData] = await Promise.all([
         JobApplicationService.getUserApplications(user.uid),
         JobApplicationService.getApplicationStats(user.uid)
       ]);
-      
+
       setApplications(applicationsData);
       setStats(statsData);
     } catch (err: any) {
@@ -74,13 +74,13 @@ const Dashboard: React.FC = () => {
   };
 
   const filteredApplications = applications.filter(app => {
-    const matchesSearch = 
+    const matchesSearch =
       app.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.notes?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -109,7 +109,7 @@ const Dashboard: React.FC = () => {
 
     try {
       setError('');
-      
+
       if (editingApplication) {
         // Update existing application
         await JobApplicationService.updateApplication(editingApplication.id, applicationData);
@@ -117,7 +117,7 @@ const Dashboard: React.FC = () => {
         // Add new application
         await JobApplicationService.addApplication(user.uid, applicationData);
       }
-      
+
       setShowModal(false);
       await loadApplications(); // Reload data
     } catch (err: any) {
@@ -191,7 +191,7 @@ const Dashboard: React.FC = () => {
                 <User size={16} />
                 <span>Welcome back, {userProfile?.email || user.email}!</span>
               </div>
-              <button 
+              <button
                 onClick={handleSignOut}
                 className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 title="Sign out"
@@ -225,7 +225,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
             <div className="flex items-center">
               <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
@@ -237,7 +237,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -249,7 +249,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
@@ -305,7 +305,7 @@ const Dashboard: React.FC = () => {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
-              
+
               <div className="relative">
                 <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <select
@@ -322,7 +322,7 @@ const Dashboard: React.FC = () => {
                 </select>
               </div>
             </div>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={handleImportJobs}
@@ -333,7 +333,7 @@ const Dashboard: React.FC = () => {
                 <Upload size={20} />
                 Import Jobs
               </button>
-              
+
               <button
                 onClick={handleAddApplication}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-all hover:shadow-lg"
@@ -403,7 +403,7 @@ const Dashboard: React.FC = () => {
                   {filteredApplications.length === 0 ? (
                     <tr>
                       <td colSpan={10} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                        {applications.length === 0 
+                        {applications.length === 0
                           ? "No applications found. Click 'Add Application' to get started."
                           : "No applications match your search criteria."
                         }
